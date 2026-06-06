@@ -1,0 +1,55 @@
+{
+  "name": "ai-auth-kit",
+  "version": "0.1.0",
+  "description": "Reusable AI provider authentication and model selection kit for CLI tools.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "bin": {
+    "ai-auth-kit": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "tsx src/cli.ts",
+    "prepare": "npm run build",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.1",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  },
+  "peerDependenciesMeta": {
+    "@oh-my-pi/pi-ai": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "ai",
+    "auth",
+    "cli",
+    "llm",
+    "model-picker"
+  ]
+}
