@@ -1,0 +1,14 @@
+{
+  "target": {
+    "exitCode": "nonzero",
+    "stderr": "Missing value for --project\n"
+  },
+  "malformedArgv": [
+    ["path", "--project"],
+    ["path", "-p"],
+    ["path", "--project", "--help"],
+    ["path", "-p", "--help"],
+    ["path", "--project", ""],
+    ["path", "-p", ""]
+  ]
+}

@@ -1,0 +1,14 @@
+ai-auth-kit
+
+Usage:
+  ai-auth-kit init [--project name]
+  ai-auth-kit providers [--project name]
+  ai-auth-kit login [provider] [--project name]
+  ai-auth-kit models [provider] [--project name]
+  ai-auth-kit use [provider] [model] [--project name]
+  ai-auth-kit current [--project name]
+  ai-auth-kit doctor [--project name]
+  ai-auth-kit path [--project name]
+
+Storage defaults to ./.ai-auth-kit/<project-name>.
+Project name defaults to "default".
