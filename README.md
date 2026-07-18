@@ -34,6 +34,8 @@ Most projects should use this one-liner:
 import { createProjectAuthKit } from "@abran-labs/ai-auth-kit";
 
 const kit = createProjectAuthKit("my-tool");
+
+await kit.ready(); // Refreshes Models.dev when available; sync list APIs remain offline-safe.
 ```
 
 That stores config under:
@@ -88,9 +90,17 @@ ai-auth-kit models openai --project my-tool
 ai-auth-kit use openai gpt-5-mini --project my-tool
 ai-auth-kit current --project my-tool
 ai-auth-kit doctor --project my-tool
+ai-auth-kit catalog status --project my-tool
+ai-auth-kit catalog refresh --project my-tool
 ```
 
 Without `--project`, the project name is `default`.
+
+Catalog metadata refreshes when interactive and catalog CLI commands run. `listProviders`,
+`listModels`, and `getModel` remain synchronous over the current snapshot/cache. Remote
+metadata only supplies provider/model facts; local reviewed auth policies remain authoritative.
+Selected models retain an immutable local provider/model snapshot so a removed upstream model
+can still resolve offline. Legacy selections remain unchanged until the user selects again.
 
 ## How Tools Use It
 

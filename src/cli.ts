@@ -20,6 +20,7 @@ Usage:
   ai-auth-kit use [provider] [model] [--project name]
   ai-auth-kit current [--project name]
   ai-auth-kit doctor [--project name]
+  ai-auth-kit catalog <status|refresh> [--project name]
   ai-auth-kit path [--project name]
 
 Storage defaults to ./.ai-auth-kit/<project-name>.
@@ -67,6 +68,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "providers") {
+    await kit.ready();
     for (const provider of kit.listProviders()) {
       process.stdout.write(`${provider.id}\t${provider.name}\t${provider.authMethods.join(",")}\n`);
     }
@@ -74,6 +76,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "login") {
+    await kit.ready();
     prompts.intro("AI Auth Kit login");
     const credential = await loginWithPrompts(kit, args[0]);
     if (!credential) {
@@ -85,6 +88,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "models") {
+    await kit.ready();
     const provider = args[0] ? kit.getProvider(args[0]) : await pickProvider(kit, "Select provider to list models");
     if (!provider) return 1;
     for (const model of kit.listModels(provider.id)) {
@@ -94,6 +98,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "use") {
+    await kit.ready();
     const provider = args[0] ? kit.getProvider(args[0]) : await pickProvider(kit);
     if (!provider) return 1;
     const model = args[1] ? kit.getModel(provider.id, args[1]) : await pickModel(kit, provider.id);
@@ -122,6 +127,22 @@ async function main(argv: readonly string[]): Promise<number> {
     process.stdout.write(`selected=${selection ? `${selection.provider.id}/${selection.model.id}` : "none"}\n`);
     process.stdout.write(`config=${kit.store.path ?? "custom"}\n`);
     process.stdout.write(`secrets=${kit.secrets.path ?? "custom"}\n`);
+    return 0;
+  }
+
+  if (command === "catalog") {
+    const action = args[0] ?? "status";
+    if (action === "refresh") await kit.refreshCatalog({ force: true });
+    if (action !== "status" && action !== "refresh") throw new Error(`Unknown catalog command: ${action}`);
+    const status = kit.catalogStatus();
+    if (status === undefined) {
+      process.stdout.write("catalog=custom\n");
+      return 0;
+    }
+    process.stdout.write(`source=${status.source}\n`);
+    process.stdout.write(`etag=${status.etag ?? "none"}\n`);
+    process.stdout.write(`fetchedAt=${status.fetchedAt ?? "snapshot"}\n`);
+    process.stdout.write(`sha256=${status.sourceContentSha256}\n`);
     return 0;
   }
 

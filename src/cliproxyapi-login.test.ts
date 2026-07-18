@@ -18,13 +18,31 @@ function provider(id: string) {
 	return result;
 }
 
+function spawnBarrier(): { readonly registered: Promise<void>; readonly register: () => void } {
+	let resolve: (() => void) | undefined;
+	const registered = new Promise<void>((complete) => {
+		resolve = complete;
+	});
+	return {
+		registered,
+		register: () => {
+			if (resolve === undefined) throw new Error("Spawn barrier was not initialized");
+			resolve();
+		},
+	};
+}
+
 test("runCliProxyApiLogin uses fixed Google argument without shell", async () => {
 	const binaryPath = join(await createTempDir(), "cli-proxy-api");
 	await writeFile(binaryPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
 	const child = new MockChildProcess();
-	const spawn = mock().mockReturnValue(child);
+	const barrier = spawnBarrier();
+	const spawn = mock((_: string, __: readonly string[], ___: object) => {
+		barrier.register();
+		return child;
+	});
 	const login = runCliProxyApiLogin(binaryPath, provider("google"), { spawn });
-	await Bun.sleep(1);
+	await barrier.registered;
 	child.emitExit(0);
 
 	await expect(login).resolves.toEqual({ binaryPath, args: ["--antigravity-login"] });
@@ -35,8 +53,14 @@ test("runCliProxyApiLogin uses fixed Claude argument and reports exit failures",
 	const binaryPath = join(await createTempDir(), "cli-proxy-api");
 	await writeFile(binaryPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
 	const child = new MockChildProcess();
-	const login = runCliProxyApiLogin(binaryPath, provider("anthropic"), { spawn: mock().mockReturnValue(child) });
-	await Bun.sleep(1);
+	const barrier = spawnBarrier();
+	const login = runCliProxyApiLogin(binaryPath, provider("anthropic"), {
+		spawn: mock((_: string, __: readonly string[], ___: object) => {
+			barrier.register();
+			return child;
+		}),
+	});
+	await barrier.registered;
 	child.emitExit(2);
 
 	await expect(login).rejects.toThrow("process exited with exit code 2");
@@ -49,14 +73,16 @@ test("runCliProxyApiLogin executes the opened inode after replacement and reject
 	await writeFile(binaryPath, "opened", { mode: 0o755 });
 	await writeFile(replacementPath, "replacement", { mode: 0o755 });
 	const child = new MockChildProcess();
+	const barrier = spawnBarrier();
 	let command = "";
 	const login = runCliProxyApiLogin(binaryPath, provider("google"), {
 		spawn: (path) => {
 			command = path;
+			barrier.register();
 			return child;
 		},
 	});
-	await Bun.sleep(1);
+	await barrier.registered;
 	await rename(replacementPath, binaryPath);
 	expect(command).toContain(`/proc/${process.pid}/fd/`);
 	await expect(readFile(command, "utf8")).resolves.toBe("opened");

@@ -28,29 +28,37 @@ const completeSuites = [
 	"src/catalog-refresh.test.ts",
 	"src/catalog-cache-security.test.ts",
 	"src/catalog-cache-process.test.ts",
+	"src/catalog-integration.test.ts",
 	"test/contract.test.ts",
 	"test/consumer-types.test.ts",
 	"test/cli-project.test.ts",
 	"test/cli-storage.test.ts",
+	"test/dependency-policy.test.ts",
 	"test/manifest-guard.test.ts",
 ] as const;
 const baselineSuiteSet = new Set<string>(baselineSuites);
 const baselineTestCount = 59;
-const completeTestCount = 99;
+const completeTestCount = 110;
 
 test("Given the canonical manifest, when Bun tooling is inspected, then all standalone suites stay native and runnable", async () => {
 	const packageManifest = await readFile(join(root, "package.json"), "utf8");
 	const bunConfig = await readFile(join(root, "bunfig.toml"), "utf8");
 
 	expect(packageManifest).toContain('"packageManager": "bun@1.3.14"');
+	expect(packageManifest).toContain('"version": "0.2.0"');
 	expect(packageManifest).toContain('"bun": "./src/index.ts"');
 	expect(packageManifest).toContain('"test": "bun test"');
 	expect(packageManifest).toContain('"test:types": "tsc -p tsconfig.test.json --noEmit"');
+	expect(packageManifest).toContain('"audit:dependencies": "bun run scripts/audit-dependencies.ts"');
+	expect(packageManifest).toContain('"qa:minimum-release-age": "bun run scripts/qa-minimum-release-age.ts"');
+	expect(packageManifest).not.toContain('"peerDependenciesMeta"');
+	expect(packageManifest).not.toContain('"@oh-my-pi/pi-ai"');
 	expect(packageManifest).not.toContain('"vitest"');
 	expect(packageManifest).not.toContain('"tsx"');
 	expect(packageManifest).not.toContain('"prepare"');
 	expect(packageManifest).not.toContain('"prepack"');
 	expect(bunConfig).toContain("minimumReleaseAge = 604800");
+	expect(bunConfig).not.toContain("minimumReleaseAgeExcludes");
 	await expect(access(join(root, "bun.lock"))).resolves.toBeNull();
 	await expect(access(join(root, "package-lock.json"))).rejects.toThrow();
 

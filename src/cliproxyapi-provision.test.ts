@@ -1,4 +1,5 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { provisionCliProxyApi } from "./cliproxyapi.js";
@@ -78,15 +79,16 @@ test("provisionCliProxyApi rejects unsupported systems before PATH or network", 
 });
 
 test("provisionCliProxyApi accepts only an explicit safe absolute executable", async () => {
-	const dir = `/home/linuxpc/explicit-cli-proxy-${Date.now()}`;
+	const dir = await mkdtemp(join(homedir(), "explicit-cli-proxy-"));
 	try {
-		await mkdir(dir, { recursive: true, mode: 0o700 });
 		const binaryPath = join(dir, "cli-proxy-api");
 		await writeFile(binaryPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
 		const result = await provisionCliProxyApi(join(dir, "cache"), { platform: "linux", arch: "x64", binaryPath });
 		expect(result).toEqual({ binaryPath, source: "path" });
 		await expect(provisionCliProxyApi(join(dir, "cache"), { platform: "linux", arch: "x64", binaryPath: "relative-cli-proxy-api" })).rejects.toThrow("absolute");
-	} finally { await rm(dir, { recursive: true, force: true }); }
+	} finally {
+		await rm(dir, { recursive: true, force: true });
+	}
 });
 
 test("provisionCliProxyApi rejects malformed release assets without cache install", async () => {

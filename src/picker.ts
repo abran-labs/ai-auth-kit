@@ -155,6 +155,7 @@ export async function pickProvider(
   message = "Select provider",
   promptAdapter: PromptAdapter = defaultPromptAdapter
 ): Promise<ProviderDefinition | undefined> {
+  await kit.ready();
   const value = await promptAdapter.autocomplete({
     message,
     maxItems: 8,
@@ -173,6 +174,7 @@ export async function pickModel(
   message = "Select model",
   promptAdapter: PromptAdapter = defaultPromptAdapter
 ): Promise<ModelDefinition | undefined> {
+  await kit.ready();
   const value = await promptAdapter.autocomplete({
     message,
     maxItems: 10,
@@ -209,6 +211,7 @@ export async function loginWithPrompts(
   promptAdapter: PromptAdapter = defaultPromptAdapter,
   options: LoginWithPromptsOptions = {}
 ): Promise<StoredCredential | undefined> {
+  await kit.ready();
   const provider = providerId ? kit.getProvider(providerId) : await pickProvider(kit, "Select provider", promptAdapter);
   if (!provider) return undefined;
 

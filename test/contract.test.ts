@@ -38,6 +38,20 @@ function storagePath(store: { readonly path?: string }): string {
   return store.path;
 }
 
+function spawnBarrier(): { readonly registered: Promise<void>; readonly register: () => void } {
+	let resolve: (() => void) | undefined;
+	const registered = new Promise<void>((complete) => {
+		resolve = complete;
+	});
+	return {
+		registered,
+		register: () => {
+			if (resolve === undefined) throw new Error("Spawn barrier was not initialized");
+			resolve();
+		},
+	};
+}
+
 async function runCli(invocation: { readonly args: readonly string[]; readonly home: string }): Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string }> {
   const processResult = Bun.spawn({
     cmd: [process.execPath, "--bun", "src/cli.ts", ...invocation.args],
@@ -60,6 +74,7 @@ test("Given the public root, when enumerated, then it exposes the frozen runtime
     "CLIPROXYAPI_BASE_URL",
     "CLIPROXYAPI_LATEST_RELEASE_URL",
     "CLIPROXYAPI_REPO",
+    "CatalogRuntime",
     "DEFAULT_PROVIDERS",
     "FileAuthKitStore",
     "FileSecretStore",
@@ -180,18 +195,32 @@ test("Given reviewed providers, when auth methods are inspected, then remote met
 });
 
 test("Given sealed-current CLIProxyAPI login, when Claude or Google is selected, then the documented Google migration gap is explicit", async () => {
-	const binaryPath = join(await mkdtemp(join(tmpdir(), "ai-auth-kit-contract-cli-")), "cli-proxy-api");
-	await writeFile(binaryPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-  const child = new EventEmitter();
-	const claudeLogin = runCliProxyApiLogin(binaryPath, provider("anthropic"), { spawn: () => child });
-	await Bun.sleep(1);
-  child.emit("exit", 0, null);
-	expect(await claudeLogin).toEqual({ binaryPath, args: ["--claude-login"] });
-  const googleChild = new EventEmitter();
-	const googleLogin = runCliProxyApiLogin(binaryPath, provider("google"), { spawn: () => googleChild });
-	await Bun.sleep(1);
-  googleChild.emit("exit", 0, null);
-	expect(await googleLogin).toEqual({ binaryPath, args: ["--antigravity-login"] });
+	await inTemporaryDirectory(async (directory) => {
+		const binaryPath = join(directory, "cli-proxy-api");
+		await writeFile(binaryPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+		const claudeChild = new EventEmitter();
+		const claudeBarrier = spawnBarrier();
+		const claudeLogin = runCliProxyApiLogin(binaryPath, provider("anthropic"), {
+			spawn: () => {
+				claudeBarrier.register();
+				return claudeChild;
+			},
+		});
+		await claudeBarrier.registered;
+		claudeChild.emit("exit", 0, null);
+		expect(await claudeLogin).toEqual({ binaryPath, args: ["--claude-login"] });
+		const googleChild = new EventEmitter();
+		const googleBarrier = spawnBarrier();
+		const googleLogin = runCliProxyApiLogin(binaryPath, provider("google"), {
+			spawn: () => {
+				googleBarrier.register();
+				return googleChild;
+			},
+		});
+		await googleBarrier.registered;
+		googleChild.emit("exit", 0, null);
+		expect(await googleLogin).toEqual({ binaryPath, args: ["--antigravity-login"] });
+	});
 });
 
 test("Given a removed configured model, when the sealed-current behavior is characterized, then the intentional gap is explicit", async () => {

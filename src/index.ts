@@ -1,4 +1,5 @@
 export { DEFAULT_PROVIDERS } from "./catalog.js";
+export { CatalogRuntime, type CatalogRefreshOptions, type CatalogRuntimeOptions, type CatalogStatus } from "./catalog-runtime.js";
 export {
   type AccountOAuthDeps,
   type AccountOAuthLoginPrompts,
@@ -66,5 +67,6 @@ export type {
 	RuntimeExternalOAuth,
 	SecretStore,
 	SelectedModel,
+	SelectedModelSnapshot,
 	StoredCredential,
 } from "./types.js";

@@ -46,6 +46,12 @@ export interface SelectedModel {
   readonly providerId: string;
   readonly modelId: string;
   readonly updatedAt: string;
+  readonly snapshot?: SelectedModelSnapshot;
+}
+
+export interface SelectedModelSnapshot {
+  readonly provider: ProviderDefinition;
+  readonly model: ModelDefinition;
 }
 
 export interface AuthKitState {
@@ -103,4 +109,5 @@ export interface ResolvedSelection {
 export interface AuthKitOptions {
   readonly storage: AuthKitStorage;
   readonly providers?: readonly ProviderDefinition[];
+  readonly catalog?: import("./catalog-runtime.js").CatalogRuntimeOptions;
 }
