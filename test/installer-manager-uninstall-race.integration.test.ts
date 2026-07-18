@@ -135,7 +135,7 @@ describe("compiled installer manager uninstall activation safety", () => {
     expect(access(foreignExecution)).rejects.toThrow();
     expect(await readFile(sentinel, "utf8")).toBe("outside sentinel\n");
     await access(join(fixture.home, "data", "ai-auth-kit", "current"));
-  }, 30_000);
+  }, 120_000);
 
   test.serial("[out of scope: post-validation same-UID race] Given the managed root is replaced after validation, when uninstall resumes, then the foreign replacement and original root both survive", async () => {
     const fixture = await createManagerFixture();

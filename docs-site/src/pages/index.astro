@@ -1,0 +1,168 @@
+---
+import "../styles/global.css"
+import "../styles/landing.css"
+import "../styles/landing-components.css"
+import "../styles/landing-responsive.css"
+
+const base = import.meta.env.BASE_URL
+const site = Astro.site ?? new URL("https://example.com")
+const canonical = new URL(base, site)
+const socialImage = new URL(`${base}social-card.png`, site)
+const socialImageAlt = "AI Auth Kit credential ledger mark on warm archival paper"
+const startHref = `${base}start/`
+const quickstartHref = `${base}start/quickstart/`
+const libraryHref = `${base}guides/library/`
+const cliHref = `${base}guides/cli/`
+const securityHref = `${base}reference/security/`
+const title = "AI Auth Kit — Provider auth for TypeScript CLI tools"
+const description =
+  "Authenticate AI providers, choose models, and keep project credentials private with one TypeScript library and CLI."
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <script is:inline>
+      (() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)")
+        const stored = localStorage.getItem("starlight-theme")
+        const preference = stored === "light" || stored === "dark" ? stored : "auto"
+        const resolveTheme = (value) => (value === "auto" ? (media.matches ? "dark" : "light") : value)
+        const applyTheme = (value) => {
+          const theme = resolveTheme(value)
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+        }
+
+        applyTheme(preference)
+        document.addEventListener("DOMContentLoaded", () => {
+          const select = document.querySelector("#landing-theme")
+          if (!(select instanceof HTMLSelectElement)) return
+          select.value = preference
+          select.addEventListener("change", () => {
+            localStorage.setItem("starlight-theme", select.value)
+            applyTheme(select.value)
+          })
+          media.addEventListener("change", () => {
+            if (select.value === "auto") applyTheme("auto")
+          })
+        })
+      })()
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content={socialImageAlt} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
+    <title>{title}</title>
+  </head>
+  <body class="landing-body">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-mast">
+      <nav class="landing-shell mast-inner" aria-label="Primary">
+        <a class="wordmark" href={base} aria-current="page">AI Auth Kit</a>
+        <div class="mast-links">
+          <a class="mast-link" href={startHref}>Documentation</a>
+          <a class="mast-link github-link" href="https://github.com/abran-labs/ai-auth-kit">GitHub</a>
+          <label class="theme-control">
+            <span>Theme</span>
+            <select class="theme-select" id="landing-theme" aria-label="Color theme">
+              <option value="auto">Auto</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </div>
+      </nav>
+    </header>
+    <main id="main-content">
+      <section class="landing-shell hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Library + CLI / TypeScript</p>
+          <h1 id="hero-title">One auth layer for your AI tools.</h1>
+          <p class="hero-lead">
+            Authenticate providers, choose models, and keep each project's credentials private—
+            without letting remote catalog data decide how login works.
+          </p>
+          <div class="hero-actions">
+            <a class="action action-primary" href={quickstartHref}>Start in 60 seconds</a>
+            <a class="action" href={startHref}>Read the docs</a>
+          </div>
+          <pre class="install-ledger" tabindex="0" aria-describedby="install-scroll-note" aria-label="Install AI Auth Kit from the current public source commit"><code><span>$</span> bun add --ignore-scripts --exact github:abran-labs/ai-auth-kit#adcb364fa086ec1a854d2b412a5efbd530595b98</code></pre>
+          <p class="scroll-note" id="install-scroll-note">Scroll sideways to read the full pinned SHA.</p>
+        </div>
+        <div class="ledger-wrap">
+          <svg class="ledger" viewBox="0 0 480 620" role="img" aria-labelledby="ledger-title ledger-desc">
+            <title id="ledger-title">Authorization records in a private credential ledger</title>
+            <desc id="ledger-desc">Three offset paper sheets with numbered provider records and vertical short and long signal strokes.</desc>
+            <rect class="ledger-sheet ledger-sheet-back" x="86" y="42" width="320" height="500" />
+            <rect class="ledger-sheet ledger-sheet-mid" x="58" y="70" width="320" height="500" />
+            <rect class="ledger-sheet" x="30" y="98" width="320" height="500" />
+            <path class="ledger-crop" d="M10 98h42M30 78v42M328 598h42M350 576v42" />
+            <path class="ledger-margin" d="M90 132v424" />
+            <text class="ledger-label" x="116" y="154">AUTHORIZATION / 01</text>
+            <text class="ledger-number" x="116" y="246">01</text>
+            <text class="ledger-record" x="116" y="286">PROVIDER</text>
+            <path class="ledger-rule" d="M116 304h190" />
+            <text class="ledger-record" x="116" y="348">METHOD</text>
+            <path class="ledger-rule" d="M116 366h142" />
+            <text class="ledger-record" x="116" y="410">STORAGE</text>
+            <path class="ledger-rule" d="M116 428h174" />
+            <g class="ledger-signal" aria-hidden="true">
+              <path d="M66 154v12M66 178v34M66 224v12M66 248v58M66 318v34M66 364v12M66 388v58M66 458v12M66 482v34" />
+            </g>
+            <text class="ledger-foot" x="116" y="534">LOCAL POLICY / PRIVATE STATE</text>
+          </svg>
+        </div>
+      </section>
+      <section class="pathways" aria-labelledby="pathways-title">
+        <div class="landing-shell">
+          <div class="pathways-heading">
+            <p class="section-label">Choose a path</p>
+            <h2 id="pathways-title">Start with the surface you own.</h2>
+          </div>
+          <div class="pathway-list">
+            <article class="pathway">
+              <p class="pathway-number">01 / Library</p>
+              <h3>Build auth into your tool</h3>
+              <p>Create a project kit, resolve credentials at runtime, and keep provider policy local.</p>
+              <a href={libraryHref}>Use the library</a>
+            </article>
+            <article class="pathway">
+              <p class="pathway-number">02 / CLI</p>
+              <h3>Configure a project by hand</h3>
+              <p>Prompt for login and model selection, then inspect exactly where state is stored.</p>
+              <a href={cliHref}>Use the CLI</a>
+            </article>
+            <article class="pathway">
+              <p class="pathway-number">03 / Trust</p>
+              <h3>Read the boundaries first</h3>
+              <p>Separate secret storage, remote metadata, optional adapters, and release provenance.</p>
+              <a href={securityHref}>Review security</a>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="landing-shell">
+        <span>AI Auth Kit / MIT</span>
+        <span>Built with Astro Starlight</span>
+      </div>
+    </footer>
+  </body>
+</html>
