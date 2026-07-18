@@ -8,6 +8,7 @@
     "strict": true,
     "declaration": true,
     "sourceMap": true,
+    "sourceRoot": "../src",
     "outDir": "dist",
     "rootDir": "src",
     "esModuleInterop": true,

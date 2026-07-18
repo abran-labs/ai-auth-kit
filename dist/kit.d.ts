@@ -1,0 +1,36 @@
+import { type CatalogRefreshOptions, type CatalogStatus } from "./catalog-runtime.js";
+import type { AuthKitOptions, AuthKitState, EnvCredential, ExternalOAuthCredential, ModelDefinition, NoAuthCredential, ProjectStorageOptions, ProviderDefinition, ResolvedSelection, RuntimeAuth, SelectedModel, StoredCredential } from "./types.js";
+export declare class AuthKit {
+    readonly storage: AuthKitOptions["storage"];
+    readonly store: AuthKitOptions["storage"]["store"];
+    readonly secrets: AuthKitOptions["storage"]["secrets"];
+    private currentProviders;
+    private providerIndex;
+    private readonly catalog;
+    constructor(options: AuthKitOptions);
+    get providers(): readonly ProviderDefinition[];
+    ready(): Promise<CatalogStatus | undefined>;
+    refreshCatalog(options?: CatalogRefreshOptions): Promise<CatalogStatus | undefined>;
+    catalogStatus(): CatalogStatus | undefined;
+    startCatalogRefresh(): void;
+    dispose(): void;
+    listProviders(): readonly ProviderDefinition[];
+    private setProviders;
+    getProvider(providerId: string): ProviderDefinition;
+    listModels(providerId: string): readonly ModelDefinition[];
+    getModel(providerId: string, modelId: string): ModelDefinition;
+    readState(): Promise<AuthKitState>;
+    saveApiKey(providerId: string, apiKey: string): Promise<StoredCredential>;
+    saveEnvCredential(providerId: string, envVar?: string): Promise<EnvCredential>;
+    saveExternalOAuth(providerId: string, metadata?: Readonly<Record<string, string>>): Promise<ExternalOAuthCredential>;
+    saveNoAuth(providerId: string): Promise<NoAuthCredential>;
+    removeCredential(providerId: string): Promise<void>;
+    getCredential(providerId: string): Promise<StoredCredential | undefined>;
+    selectModel(providerId: string, modelId: string): Promise<SelectedModel>;
+    getSelectedModel(): Promise<SelectedModel | undefined>;
+    resolveSelection(): Promise<ResolvedSelection | undefined>;
+    runtimeAuth(providerId: string): Promise<RuntimeAuth>;
+    private patchState;
+}
+export declare function createAuthKit(options: AuthKitOptions): AuthKit;
+export declare function createProjectAuthKit(projectName: string, options?: ProjectStorageOptions & Pick<AuthKitOptions, "providers" | "catalog">): AuthKit;

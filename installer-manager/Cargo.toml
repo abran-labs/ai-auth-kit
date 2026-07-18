@@ -1,0 +1,32 @@
+[package]
+name = "ai-auth-kit-installer-manager"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+
+[dependencies]
+base64 = "0.22.1"
+ed25519-dalek = { version = "2.2.0", default-features = false, features = ["std"] }
+libc = "0.2.180"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sha2 = "0.10.9"
+
+[features]
+test-manager = []
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+undocumented_unsafe_blocks = "deny"

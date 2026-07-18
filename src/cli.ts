@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-import * as prompts from "@clack/prompts";
-import { createProjectAuthKit } from "./kit.js";
-import { loginWithPrompts, pickModel, pickProvider } from "./picker.js";
+import { CLI_VERSION } from "./version.js";
 
 interface ParsedArgs {
   readonly command: string;
@@ -22,6 +20,11 @@ Usage:
   ai-auth-kit doctor [--project name]
   ai-auth-kit catalog <status|refresh> [--project name]
   ai-auth-kit path [--project name]
+
+Options:
+  --project name, -p name  Select project storage.
+  --version, -V            Print version.
+  --help, -h               Print help.
 
 Storage defaults to ./.ai-auth-kit/<project-name>.
 Project name defaults to "default".
@@ -53,10 +56,21 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
 async function main(argv: readonly string[]): Promise<number> {
   const { command, args, projectName } = parseArgs(argv);
 
+  if (command === "--version" || command === "-V") {
+    process.stdout.write(`${CLI_VERSION}\n`);
+    return 0;
+  }
+
   if (command === "help" || command === "--help" || command === "-h") {
     process.stdout.write(usage());
     return 0;
   }
+
+  const [prompts, { createProjectAuthKit }, { loginWithPrompts, pickModel, pickProvider }] = await Promise.all([
+    import("@clack/prompts"),
+    import("./kit.js"),
+    import("./picker.js"),
+  ]);
 
   const kit = createProjectAuthKit(projectName);
 
@@ -155,12 +169,15 @@ async function main(argv: readonly string[]): Promise<number> {
   return 2;
 }
 
-main(process.argv.slice(2))
-  .then((code) => {
-    process.exitCode = code;
-  })
-  .catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`${message}\n`);
-    process.exitCode = 1;
-  });
+const executedPath = process.argv[1];
+if (executedPath !== undefined && import.meta.url === new URL(`file://${executedPath}`).href) {
+  main(process.argv.slice(2))
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 1;
+    });
+}
