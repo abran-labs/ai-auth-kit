@@ -1,17 +1,18 @@
 import { DEFAULT_PROVIDERS } from "./catalog.js";
-import { FileAuthKitStore, FileSecretStore, defaultConfigDir } from "./storage.js";
+import { refreshOpenAiCodexToken } from "./account-oauth.js";
+import { liveSecretRefs, removeCredentialTransaction } from "./credential-removal.js";
+import { projectStorage } from "./storage.js";
 import type {
   AuthKitOptions,
   AuthKitState,
-  AuthKitStore,
   EnvCredential,
   ExternalOAuthCredential,
   ModelDefinition,
   NoAuthCredential,
+  ProjectStorageOptions,
   ProviderDefinition,
   ResolvedSelection,
   RuntimeAuth,
-  SecretStore,
   SelectedModel,
   StoredCredential
 } from "./types.js";
@@ -28,21 +29,29 @@ function secretRef(providerId: string): string {
   return `provider:${providerId}:api-key`;
 }
 
+const OPENAI_CODEX_REFRESH_WINDOW_MS = 5 * 60_000;
+
+function needsOpenAiCodexRefresh(metadata: Readonly<Record<string, string>>): boolean {
+	const expiresAt = Number(metadata.expiresAt);
+	return !Number.isFinite(expiresAt) || expiresAt <= Date.now() + OPENAI_CODEX_REFRESH_WINDOW_MS;
+}
+
 function indexProviders(providers: readonly ProviderDefinition[]): Map<string, ProviderDefinition> {
   return new Map(providers.map((provider) => [provider.id, provider]));
 }
 
 export class AuthKit {
   readonly providers: readonly ProviderDefinition[];
-  readonly store: AuthKitStore;
-  readonly secrets: SecretStore;
+  readonly storage: AuthKitOptions["storage"];
+  readonly store: AuthKitOptions["storage"]["store"];
+  readonly secrets: AuthKitOptions["storage"]["secrets"];
   private readonly providerIndex: Map<string, ProviderDefinition>;
 
-  constructor(options: AuthKitOptions = {}) {
-    const configDir = options.configDir ?? defaultConfigDir();
+  constructor(options: AuthKitOptions) {
     this.providers = options.providers ?? DEFAULT_PROVIDERS;
-    this.store = options.store ?? new FileAuthKitStore(configDir);
-    this.secrets = options.secrets ?? new FileSecretStore(configDir);
+    this.storage = options.storage;
+    this.store = options.storage.store;
+    this.secrets = options.storage.secrets;
     this.providerIndex = indexProviders(this.providers);
   }
 
@@ -67,7 +76,9 @@ export class AuthKit {
   }
 
   async readState(): Promise<AuthKitState> {
-    return this.store.read();
+    const state = await this.store.read();
+    await this.secrets.reconcile(liveSecretRefs(state));
+    return state;
   }
 
   async saveApiKey(providerId: string, apiKey: string): Promise<StoredCredential> {
@@ -130,11 +141,7 @@ export class AuthKit {
   async removeCredential(providerId: string): Promise<void> {
     const provider = this.getProvider(providerId);
     const state = await this.readState();
-    const credential = state.credentials[provider.id];
-    if (credential?.type === "api-key") await this.secrets.delete(credential.secretRef);
-    const credentials = { ...state.credentials };
-    delete credentials[provider.id];
-    await this.store.write({ ...state, credentials, updatedAt: now() });
+    await removeCredentialTransaction({ store: this.store, secrets: this.secrets, state }, provider.id);
   }
 
   async getCredential(providerId: string): Promise<StoredCredential | undefined> {
@@ -158,9 +165,15 @@ export class AuthKit {
   async resolveSelection(): Promise<ResolvedSelection | undefined> {
     const state = await this.readState();
     if (!state.selectedModel) return undefined;
-    const provider = this.getProvider(state.selectedModel.providerId);
-    const model = this.getModel(provider.id, state.selectedModel.modelId);
-    return { provider, model, credential: state.credentials[provider.id] };
+		const provider = this.providers.find(
+			(entry) => entry.id === state.selectedModel?.providerId,
+		);
+		if (!provider) return undefined;
+		const model = provider.models.find(
+			(entry) => entry.id === state.selectedModel?.modelId,
+		);
+		if (!model) return undefined;
+		return { provider, model, credential: state.credentials[provider.id] };
   }
 
   async runtimeAuth(providerId: string): Promise<RuntimeAuth> {
@@ -178,6 +191,58 @@ export class AuthKit {
       if (value) env[credential.envVar] = value;
     }
 
+    if (credential?.type === "oauth-external") {
+      let runtimeCredential = credential;
+      let accessToken = credential.metadata.accessTokenRef
+        ? await this.secrets.get(credential.metadata.accessTokenRef)
+        : undefined;
+      let refreshToken = credential.metadata.refreshTokenRef
+        ? await this.secrets.get(credential.metadata.refreshTokenRef)
+        : undefined;
+
+      if (
+        credential.metadata.adapter === "openai-codex" &&
+        credential.metadata.accessTokenRef &&
+        credential.metadata.refreshTokenRef &&
+        refreshToken &&
+        needsOpenAiCodexRefresh(credential.metadata)
+      ) {
+        const refreshed = await refreshOpenAiCodexToken(refreshToken);
+        await this.secrets.set(credential.metadata.accessTokenRef, refreshed.accessToken);
+        await this.secrets.set(credential.metadata.refreshTokenRef, refreshed.refreshToken);
+        const metadata = {
+          ...credential.metadata,
+          expiresAt: String(Date.now() + refreshed.expiresInSeconds * 1000),
+          ...(refreshed.accountId ? { accountId: refreshed.accountId } : {}),
+        };
+        runtimeCredential = { ...credential, metadata };
+        await this.patchState((state) => ({
+          ...state,
+          credentials: { ...state.credentials, [provider.id]: runtimeCredential },
+          updatedAt: now(),
+        }));
+        accessToken = refreshed.accessToken;
+        refreshToken = refreshed.refreshToken;
+      }
+
+      const headers: Record<string, string> = {};
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      if (runtimeCredential.metadata.accountId) headers["ChatGPT-Account-Id"] = runtimeCredential.metadata.accountId;
+      return {
+        providerId: provider.id,
+        credential: runtimeCredential,
+        env,
+        external: {
+          adapter: runtimeCredential.metadata.adapter ?? "oauth-external",
+          ...(accessToken ? { accessToken } : {}),
+          ...(runtimeCredential.metadata.expiresAt ? { expiresAt: Number(runtimeCredential.metadata.expiresAt) } : {}),
+          ...(runtimeCredential.metadata.accountId ? { accountId: runtimeCredential.metadata.accountId } : {}),
+          ...(runtimeCredential.metadata.baseUrl ? { baseUrl: runtimeCredential.metadata.baseUrl } : {}),
+          headers
+        }
+      };
+    }
+
     return { providerId: provider.id, credential, env };
   }
 
@@ -187,6 +252,13 @@ export class AuthKit {
   }
 }
 
-export function createAuthKit(options: AuthKitOptions = {}): AuthKit {
+export function createAuthKit(options: AuthKitOptions): AuthKit {
   return new AuthKit(options);
+}
+
+export function createProjectAuthKit(projectName: string, options: ProjectStorageOptions & Pick<AuthKitOptions, "providers"> = {}): AuthKit {
+  return new AuthKit({
+    providers: options.providers,
+    storage: projectStorage(projectName, options)
+  });
 }

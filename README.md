@@ -1,64 +1,54 @@
 # AI Auth Kit
 
-A small TypeScript library and CLI for saving AI provider credentials and choosing a default model.
+A small TypeScript library and CLI for saving AI provider credentials and choosing a model.
 
-It does not call models by itself. It gives other tools a clean way to ask:
-
-- which provider should I use?
-- which model is selected?
-- where should I get auth from?
-
-Model calls can then happen through AI SDK, pi-ai, OpenRouter, or any project-specific client.
+The important design choice: **storage belongs to the project using this library**. AI Auth Kit does not secretly claim one global config for every tool. Each app can keep its own provider, model, and auth settings.
 
 ## What It Includes
 
-- provider catalog for OpenAI, Anthropic, Google, OpenRouter, GitHub Copilot, and Ollama
+- OpenCode/models.dev-style provider catalog
 - typed library API
-- CLI commands for login and model selection
-- file-backed config store
+- project-local storage helpers
+- CLI commands for sign-in and model selection
 - separate local secret store written with `0600` permissions
 - prompt helpers built with `@clack/prompts`
 
-## Install
+## Local Development
 
 ```bash
-npm install ai-auth-kit
+bun install --frozen-lockfile
+bun run check
+bun run test:types
+bun test
+bun run build
+bun run src/cli.ts --help
 ```
 
-For local development:
-
-```bash
-npm install
-npm run build
-npm link
-```
-
-## CLI
-
-```bash
-ai-auth-kit providers
-ai-auth-kit login
-ai-auth-kit models openai
-ai-auth-kit use openai gpt-5-mini
-ai-auth-kit current
-ai-auth-kit doctor
-```
-
-Default storage location:
-
-```text
-~/.config/ai-auth-kit/config.json
-~/.config/ai-auth-kit/secrets.json
-```
-
-`config.json` stores credential references and the selected model. `secrets.json` stores local API keys. Apps can replace the secret store with an OS keychain or their own backend.
+`bunfig.toml` sets `minimumReleaseAge = 604800`. This filters newly resolved npm package versions to versions at least seven days old. It does not retroactively audit versions already recorded in `bun.lock`, and it does not apply to Git dependencies.
 
 ## Library Usage
 
-```ts
-import { createAuthKit } from "ai-auth-kit";
+Most projects should use this one-liner:
 
-const kit = createAuthKit({ configDir: ".my-tool" });
+```ts
+import { createProjectAuthKit } from "@abran-labs/ai-auth-kit";
+
+const kit = createProjectAuthKit("my-tool");
+```
+
+That stores config under:
+
+```text
+./.ai-auth-kit/my-tool/config.json
+./.ai-auth-kit/my-tool/secrets.json
+```
+
+Full example:
+
+```ts
+import { createProjectAuthKit } from "@abran-labs/ai-auth-kit";
+
+const kit = createProjectAuthKit("my-tool");
 
 await kit.saveEnvCredential("openai", "OPENAI_API_KEY");
 await kit.selectModel("openai", "gpt-5-mini");
@@ -69,6 +59,38 @@ const auth = await kit.runtimeAuth("openai");
 console.log(selection?.provider.name, selection?.model.name);
 console.log(auth.env);
 ```
+
+If a project wants complete control, pass storage explicitly:
+
+```ts
+import { createAuthKit, projectStorage } from "@abran-labs/ai-auth-kit";
+
+const kit = createAuthKit({
+  storage: projectStorage("my-tool")
+});
+```
+
+There is also `globalStorage()` for tools that intentionally want shared global config, but it is opt-in.
+
+## CLI
+
+Anthropic and Google account sign-in appear in the interactive auth picker as account-auth options with inline risk text.
+
+When a user picks Anthropic or Google account sign-in, AI Auth Kit first shows the risk confirmation, then ensures `cli-proxy-api` is available, then launches the matching CLIProxyAPI account login flow. On Linux x64/arm64 it prefers an existing trusted local `cli-proxy-api` on `PATH`; otherwise it downloads the exact current GitHub release asset, verifies its API SHA-256 digest and the release `checksums.txt`, then writes it to the project's private AI Auth Kit cache. Other platforms require a separately installed CLIProxyAPI binary.
+
+The CLI also defaults to project-local storage:
+
+```bash
+ai-auth-kit init --project my-tool
+ai-auth-kit providers --project my-tool
+ai-auth-kit login openai --project my-tool
+ai-auth-kit models openai --project my-tool
+ai-auth-kit use openai gpt-5-mini --project my-tool
+ai-auth-kit current --project my-tool
+ai-auth-kit doctor --project my-tool
+```
+
+Without `--project`, the project name is `default`.
 
 ## How Tools Use It
 
@@ -87,7 +109,7 @@ A VoxType integration can build on this without making the library VoxType-speci
 
 ```bash
 voxtype-tools auth login
-voxtype-tools model select
+voxtype-tools model
 voxtype-tools postprocess
 ```
 
@@ -101,4 +123,4 @@ timeout_ms = 30000
 
 ## Design Choice
 
-OpenCode is a good UX reference, but this package does not depend on OpenCode internals. Provider OAuth adapters can be added later through pi-ai or dedicated CLI adapters.
+OpenCode is a good UX reference, but this package does not depend on OpenCode internals. Anthropic/Google account sign-in is provisioned on first use through a dedicated CLIProxyAPI adapter.

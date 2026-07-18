@@ -1,28 +1,68 @@
 #!/usr/bin/env node
 import * as prompts from "@clack/prompts";
-import { createAuthKit } from "./kit.js";
+import { createProjectAuthKit } from "./kit.js";
 import { loginWithPrompts, pickModel, pickProvider } from "./picker.js";
+
+interface ParsedArgs {
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly projectName: string;
+}
 
 function usage(): string {
   return `ai-auth-kit
 
 Usage:
-  ai-auth-kit providers
-  ai-auth-kit login [provider]
-  ai-auth-kit models [provider]
-  ai-auth-kit use [provider] [model]
-  ai-auth-kit current
-  ai-auth-kit doctor
-  ai-auth-kit path
+  ai-auth-kit init [--project name]
+  ai-auth-kit providers [--project name]
+  ai-auth-kit login [provider] [--project name]
+  ai-auth-kit models [provider] [--project name]
+  ai-auth-kit use [provider] [model] [--project name]
+  ai-auth-kit current [--project name]
+  ai-auth-kit doctor [--project name]
+  ai-auth-kit path [--project name]
+
+Storage defaults to ./.ai-auth-kit/<project-name>.
+Project name defaults to "default".
 `;
 }
 
+function parseArgs(argv: readonly string[]): ParsedArgs {
+  const [command = "help", ...rest] = argv;
+  const args: string[] = [];
+  let projectName = "default";
+
+  for (let index = 0; index < rest.length; index += 1) {
+    const item = rest[index];
+    if (item === "--project" || item === "-p") {
+      const projectValue = rest[index + 1];
+      if (!projectValue || projectValue.startsWith("-")) {
+        throw new Error("Missing value for --project");
+      }
+      projectName = projectValue;
+      index += 1;
+      continue;
+    }
+    args.push(item);
+  }
+
+  return { command, args, projectName };
+}
+
 async function main(argv: readonly string[]): Promise<number> {
-  const [command = "help", ...args] = argv;
-  const kit = createAuthKit();
+  const { command, args, projectName } = parseArgs(argv);
 
   if (command === "help" || command === "--help" || command === "-h") {
     process.stdout.write(usage());
+    return 0;
+  }
+
+  const kit = createProjectAuthKit(projectName);
+
+  if (command === "init") {
+    const state = await kit.readState();
+    await kit.store.write(state);
+    prompts.outro(`Initialized ${kit.store.path ?? "project storage"}`);
     return 0;
   }
 
@@ -76,6 +116,7 @@ async function main(argv: readonly string[]): Promise<number> {
   if (command === "doctor") {
     const state = await kit.readState();
     const selection = await kit.resolveSelection();
+    process.stdout.write(`project=${projectName}\n`);
     process.stdout.write(`providers=${kit.listProviders().length}\n`);
     process.stdout.write(`credentials=${Object.keys(state.credentials).length}\n`);
     process.stdout.write(`selected=${selection ? `${selection.provider.id}/${selection.model.id}` : "none"}\n`);

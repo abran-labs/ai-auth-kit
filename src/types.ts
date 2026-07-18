@@ -65,12 +65,33 @@ export interface SecretStore {
   get(ref: string): Promise<string | undefined>;
   set(ref: string, value: string): Promise<void>;
   delete(ref: string): Promise<void>;
+  reconcile(liveRefs: readonly string[]): Promise<void>;
+}
+
+export interface AuthKitStorage {
+  readonly store: AuthKitStore;
+  readonly secrets: SecretStore;
+}
+
+export interface ProjectStorageOptions {
+  readonly rootDir?: string;
+  readonly dirName?: string;
 }
 
 export interface RuntimeAuth {
   readonly providerId: string;
   readonly credential: StoredCredential | undefined;
   readonly env: Readonly<Record<string, string>>;
+  readonly external?: RuntimeExternalOAuth;
+}
+
+export interface RuntimeExternalOAuth {
+  readonly adapter: string;
+  readonly accessToken?: string;
+  readonly expiresAt?: number;
+  readonly accountId?: string;
+  readonly baseUrl?: string;
+  readonly headers: Readonly<Record<string, string>>;
 }
 
 export interface ResolvedSelection {
@@ -80,8 +101,6 @@ export interface ResolvedSelection {
 }
 
 export interface AuthKitOptions {
-  readonly configDir?: string;
+  readonly storage: AuthKitStorage;
   readonly providers?: readonly ProviderDefinition[];
-  readonly store?: AuthKitStore;
-  readonly secrets?: SecretStore;
 }
