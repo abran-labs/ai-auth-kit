@@ -24,14 +24,20 @@ async function manifest(path: string): Promise<ReleaseManifest> {
   return Bun.file(path).json() as Promise<ReleaseManifest>;
 }
 
+export async function assertInstallerCurrent(manifestPath: string, installerPath = resolve(root, "install.sh")): Promise<void> {
+  const [expected, current] = await Promise.all([
+    manifest(manifestPath).then(renderInstaller),
+    readFile(installerPath, "utf8").catch(() => ""),
+  ]);
+  if (current !== expected) throw new Error("install.sh is stale; run bun run installer:build");
+}
+
 if (import.meta.main) {
   const manifestPath = process.argv[2] === "--check" ? resolve(root, "release", "manifest.json") : process.argv[2] ?? resolve(root, "release", "manifest.json");
-  const expected = await renderInstaller(await manifest(manifestPath));
-  const current = await readFile(resolve(root, "install.sh"), "utf8").catch(() => "");
   if (process.argv[3] === "--check" || process.argv[2] === "--check") {
-    if (current !== expected) throw new Error("install.sh is stale; run bun run installer:build");
+    await assertInstallerCurrent(manifestPath);
   } else if (process.argv.length === 2 || process.argv.length === 3) {
-    await Bun.write(resolve(root, "install.sh"), expected);
+    await Bun.write(resolve(root, "install.sh"), await renderInstaller(await manifest(manifestPath)));
   } else {
     throw new Error("usage: bun run installer:build [--check]");
   }

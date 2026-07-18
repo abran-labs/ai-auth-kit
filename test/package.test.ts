@@ -81,10 +81,10 @@ test("Given tracked distribution files, when source is rebuilt in a temporary di
   expect(result.files).toBeGreaterThan(0);
 }, 20_000);
 
-test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it requires a full SHA without fabricating a public commit", async () => {
+test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins the reviewed public source commit", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
-  expect(readme).toContain("github:abran-labs/ai-auth-kit#<40-lowercase-hex-commit>");
-  expect(readme).not.toMatch(/github:abran-labs\/ai-auth-kit#[0-9a-f]{40}/);
+  expect(readme).toContain("github:abran-labs/ai-auth-kit#adcb364fa086ec1a854d2b412a5efbd530595b98");
+  expect(readme).not.toContain("github:abran-labs/ai-auth-kit#main");
   expect(readme).toMatch(/(?:isn't|not) published to npm or GitHub Packages/);
   expect(readme).not.toContain('"@abran-labs/ai-auth-kit": "github:abran-labs/ai-auth-kit#master"');
   expect(readme).not.toContain("npm install @abran-labs/ai-auth-kit");

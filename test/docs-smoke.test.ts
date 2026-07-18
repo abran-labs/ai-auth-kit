@@ -32,6 +32,7 @@ afterAll(async () => fixture.cleanup(), 30_000);
 test("Given canonical documentation, when executable contracts are compared, then policy, package exports, and help stay synchronized", async () => {
 	// Given
 	const readme = documents.get("README.md") ?? "";
+	const canonicalDocumentation = [...documents.values()].join("\n");
 	const packageSource = await readFile(join(root, "package.json"), "utf8");
 	const publicApi = await import("../src/index.js");
 	const typescriptExamples = [...readme.matchAll(/```ts\n([\s\S]*?)```/g)].map((match) => match[1] ?? "").join("\n");
@@ -48,8 +49,11 @@ test("Given canonical documentation, when executable contracts are compared, the
 	expect(packageSource).toContain('"types": "./dist/index.d.ts"');
 	expect(packageSource).toContain('"import": "./dist/index.js"');
 	expect(packageSource).toContain('"ai-auth-kit": "./dist/cli.js"');
-	expect(readme).toContain(cliHelp.trimEnd());
-	expect(readme).toContain(managerHelp.trimEnd());
+	expect(canonicalDocumentation).toContain(cliHelp.trimEnd());
+	expect(canonicalDocumentation).toContain(managerHelp.trimEnd());
+	expect(readme).toContain("https://abran-labs.github.io/ai-auth-kit/");
+	expect(readme).toContain("## Start in 60 seconds");
+	expect(readme).not.toContain("--attestation-receipt");
 	for (const flag of ["--project", "-p", "--version", "-V", "--help", "-h"]) expect(helpFlags(cliHelp).has(flag), flag).toBeTrue();
 });
 
