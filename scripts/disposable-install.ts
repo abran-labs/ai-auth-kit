@@ -1,3 +1,8 @@
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { z } from "zod";
+import { parseBunLock } from "./dependency-policy.js";
+
 export interface BoundedCommand {
 	readonly command: readonly string[];
 	readonly cwd: string;
@@ -16,6 +21,15 @@ export interface InstalledFixture {
 }
 
 const installedPackageSchema = z.object({ name: z.string(), version: z.string() });
+const terminationGraceMilliseconds = 250;
+const reapingDeadlineMilliseconds = 1000;
+
+interface ProcessIdentity {
+	readonly pid: number;
+	readonly processGroup: number;
+	readonly session: number;
+	readonly startTime: string;
+}
 
 function delay(milliseconds: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -44,27 +58,101 @@ async function boundedOutput(stream: ReadableStream<Uint8Array>, maximum: number
 	return new TextDecoder().decode(Bun.concatArrayBuffers(chunks));
 }
 
-function signalProcessGroup(pid: number, signal: NodeJS.Signals): void {
+function missingProcess(error: unknown): boolean {
+	return error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "ESRCH");
+}
+
+function parseProcessIdentity(pid: number, source: string): ProcessIdentity {
+	const closingParenthesis = source.lastIndexOf(")");
+	const fields = source.slice(closingParenthesis + 2).trim().split(/\s+/);
+	const processGroup = Number(fields[2]);
+	const session = Number(fields[3]);
+	const startTime = fields[19];
+	if (!Number.isInteger(processGroup) || !Number.isInteger(session) || startTime === undefined) {
+		throw new Error(`invalid /proc stat for ${pid}`);
+	}
+	return { pid, processGroup, session, startTime };
+}
+
+async function processIdentity(pid: number): Promise<ProcessIdentity | undefined> {
 	try {
-		process.kill(-pid, signal);
+		return parseProcessIdentity(pid, await readFile(`/proc/${pid}/stat`, "utf8"));
+	} catch (error) {
+		if (missingProcess(error)) return undefined;
+		throw error;
+	}
+}
+
+async function processGroupMembers(processGroup: number): Promise<readonly ProcessIdentity[]> {
+	const entries = await readdir("/proc", { withFileTypes: true });
+	const identities = await Promise.all(entries
+		.filter((entry) => entry.isDirectory() && /^\d+$/.test(entry.name))
+		.map((entry) => processIdentity(Number(entry.name))));
+	return identities.filter((identity): identity is ProcessIdentity => identity !== undefined && identity.processGroup === processGroup);
+}
+
+async function sessionLeader(pid: number): Promise<ProcessIdentity | undefined> {
+	const deadline = Date.now() + terminationGraceMilliseconds;
+	for (;;) {
+		const identity = await processIdentity(pid);
+		if (identity === undefined || (identity.processGroup === pid && identity.session === pid)) return identity;
+		if (Date.now() >= deadline) throw new Error("setsid did not establish an isolated process group");
+		await delay(5);
+	}
+}
+
+async function groupGone(processGroup: number, deadline: number): Promise<boolean> {
+	for (;;) {
+		const members = await processGroupMembers(processGroup);
+		if (members.length === 0 && !processGroupExists(processGroup)) return true;
+		if (Date.now() >= deadline) return false;
+		await delay(10);
+	}
+}
+
+function processGroupExists(processGroup: number): boolean {
+	try {
+		process.kill(-processGroup, 0);
+		return true;
+	} catch (error) {
+		if (error instanceof Error && "code" in error && error.code === "ESRCH") return false;
+		throw error;
+	}
+}
+
+async function sameProcess(identity: ProcessIdentity): Promise<boolean> {
+	const current = await processIdentity(identity.pid);
+	return current !== undefined && current.startTime === identity.startTime;
+}
+
+function signalProcessGroup(processGroup: number, signal: NodeJS.Signals): void {
+	try {
+		process.kill(-processGroup, signal);
 	} catch (error) {
 		if (!(error instanceof Error) || !("code" in error) || error.code !== "ESRCH") throw error;
 	}
 }
 
 async function terminateProcessGroup(process: Bun.Subprocess<"ignore", "pipe", "pipe">): Promise<void> {
-	signalProcessGroup(process.pid, "SIGTERM");
-	const terminated = await Promise.race([process.exited.then(() => true), delay(250).then(() => false)]);
-	if (!terminated) {
-		signalProcessGroup(process.pid, "SIGKILL");
-		await process.exited;
+	const leader = await sessionLeader(process.pid);
+	if (leader === undefined) return;
+	if (await sameProcess(leader)) signalProcessGroup(leader.processGroup, "SIGTERM");
+	const terminated = await groupGone(leader.processGroup, Date.now() + terminationGraceMilliseconds);
+	if (!terminated && (await processGroupMembers(leader.processGroup)).length > 0) {
+		signalProcessGroup(leader.processGroup, "SIGKILL");
+	}
+	await process.exited;
+	if (!(await groupGone(leader.processGroup, Date.now() + reapingDeadlineMilliseconds))) {
+		throw new Error(`process group ${leader.processGroup} survived timeout cleanup`);
 	}
 }
 
 export async function runBounded(input: BoundedCommand): Promise<BoundedResult> {
 	if (input.command.length === 0) throw new Error("bounded command requires an executable");
+	const setsid = Bun.which("setsid");
+	if (setsid === null) throw new Error("setsid is required for bounded disposable commands");
 	const process = Bun.spawn({
-		cmd: ["setsid", "--wait", ...input.command],
+		cmd: [setsid, "--wait", ...input.command],
 		cwd: input.cwd,
 		stdout: "pipe",
 		stderr: "pipe",
@@ -101,7 +189,3 @@ export async function assertInstalledFixture(fixture: InstalledFixture): Promise
 		throw new Error(`lock resolution mismatch: expected ${fixture.packageName}@${fixture.version}`);
 	}
 }
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { z } from "zod";
-import { parseBunLock } from "./dependency-policy.js";

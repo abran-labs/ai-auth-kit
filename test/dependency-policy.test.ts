@@ -92,7 +92,7 @@ test("Given a hanging fake Bun with a child process, when the bounded runner exp
 	const directory = await mkdtemp(join(tmpdir(), "ai-auth-kit-hanging-bun-"));
 	const pidPath = join(directory, "child.pid");
 	const fakeBun = join(directory, "fake-bun");
-	await writeFile(fakeBun, `#!/bin/sh\nsleep 30 &\nprintf '%s' "$!" > "${pidPath}"\nwait\n`);
+	await writeFile(fakeBun, `#!/bin/sh\n( trap '' TERM; while :; do sleep 1; done ) &\nprintf '%s' "$!" > "${pidPath}"\ntrap 'exit 0' TERM\nwhile :; do sleep 1; done\n`);
 	await chmod(fakeBun, 0o700);
 
 	try {

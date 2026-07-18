@@ -34,11 +34,21 @@ const completeSuites = [
 	"test/cli-project.test.ts",
 	"test/cli-storage.test.ts",
 	"test/dependency-policy.test.ts",
+	"test/git-dependency.test.ts",
+	"test/package.test.ts",
 	"test/manifest-guard.test.ts",
+	"test/build-cli.test.ts",
+	"test/release-artifacts.test.ts",
+	"test/release-bundle.test.ts",
+	"test/installer-generated.test.ts",
+	"test/installer-manager.integration.test.ts",
+	"test/installer-manager-release-security.integration.test.ts",
+	"test/installer-manager-uninstall-race.integration.test.ts",
+	"test/docs-smoke.test.ts",
 ] as const;
 const baselineSuiteSet = new Set<string>(baselineSuites);
 const baselineTestCount = 59;
-const completeTestCount = 110;
+const completeTestCount = 150;
 
 test("Given the canonical manifest, when Bun tooling is inspected, then all standalone suites stay native and runnable", async () => {
 	const packageManifest = await readFile(join(root, "package.json"), "utf8");
@@ -51,16 +61,30 @@ test("Given the canonical manifest, when Bun tooling is inspected, then all stan
 	expect(packageManifest).toContain('"test:types": "tsc -p tsconfig.test.json --noEmit"');
 	expect(packageManifest).toContain('"audit:dependencies": "bun run scripts/audit-dependencies.ts"');
 	expect(packageManifest).toContain('"qa:minimum-release-age": "bun run scripts/qa-minimum-release-age.ts"');
+	expect(packageManifest).toContain('"qa:git-consumer": "bun run scripts/qa-git-consumer.ts"');
+	expect(packageManifest).toContain('"qa:stale-package": "bun run scripts/qa-stale-package.ts"');
+	expect(packageManifest).toContain('"repository": {');
+	expect(packageManifest).toContain('"url": "https://github.com/abran-labs/ai-auth-kit.git"');
 	expect(packageManifest).not.toContain('"peerDependenciesMeta"');
 	expect(packageManifest).not.toContain('"@oh-my-pi/pi-ai"');
 	expect(packageManifest).not.toContain('"vitest"');
 	expect(packageManifest).not.toContain('"tsx"');
 	expect(packageManifest).not.toContain('"prepare"');
 	expect(packageManifest).not.toContain('"prepack"');
+	expect(packageManifest).not.toContain('"postinstall"');
+	expect(packageManifest).not.toContain('"preinstall"');
+	expect(packageManifest).not.toContain('"install"');
 	expect(bunConfig).toContain("minimumReleaseAge = 604800");
 	expect(bunConfig).not.toContain("minimumReleaseAgeExcludes");
-	await expect(access(join(root, "bun.lock"))).resolves.toBeNull();
-	await expect(access(join(root, "package-lock.json"))).rejects.toThrow();
+	await access(join(root, "bun.lock"));
+	let packageLockExists = true;
+	try {
+		await access(join(root, "package-lock.json"));
+	} catch (error) {
+		if (!(error instanceof Error)) throw error;
+		packageLockExists = false;
+	}
+	expect(packageLockExists).toBeFalse();
 
 	const discoveredSuites: string[] = [];
 	for (const directory of ["src", "test"]) {
@@ -80,7 +104,7 @@ test("Given the canonical manifest, when Bun tooling is inspected, then all stan
 		expect(source).not.toMatch(/from ["']vitest["']/);
 		expect(source).not.toMatch(/^\s*test\.skip\(/m);
 		expect(source).not.toMatch(/^\s*test\.todo\(/m);
-		const testCount = source.match(/\btest\s*\(/g)?.length ?? 0;
+		const testCount = source.match(/\btest(?:\.serial)?\s*\(/g)?.length ?? 0;
 		discoveredCompleteTestCount += testCount;
 		if (baselineSuiteSet.has(suite)) {
 			discoveredBaselineTestCount += testCount;

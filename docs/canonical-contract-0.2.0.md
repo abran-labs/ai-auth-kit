@@ -1,88 +1,43 @@
-# Canonical 0.2.0 Contract
+# Canonical 0.2.0 contract
 
-## Status and scope
+## Identity and consumption
 
-`@abran-labs/ai-auth-kit` and the `ai-auth-kit` CLI are the canonical public
-identity for version `0.2.0`. This document freezes the compatibility target;
-it does not change the package manifest, which is owned by the Bun migration
-work. Git consumers must import tracked source or tracked built exports without
-requiring `prepare`, `postinstall`, or another lifecycle build.
+`@abran-labs/ai-auth-kit` and the `ai-auth-kit` executable identify version `0.2.0`. Consumption is Bun Git dependency installation from `github:abran-labs/ai-auth-kit#<40-lowercase-hex-commit>`. No npm or GitHub Packages publication is part of this contract. The declared and locked commits must match.
 
-## Library API
+Tracked source, JavaScript, declarations, CLI output, source maps, and catalog snapshot data must remain fresh at every consumable commit. There are no package lifecycle build scripts.
 
-The package root exposes only the symbols enumerated by
-`test/contract.test.ts`. That list includes `AuthKit`, factory functions,
-storage implementations and paths, picker helpers, account OAuth helpers,
-CLIProxyAPI APIs, external-auth helpers, `DEFAULT_PROVIDERS`, and the public
-types from `src/types.ts`. Existing exported names remain compatible; new
-capabilities require a documented additive change.
+## Root API
 
-Both source and built declaration consumers are type-checked through the
-explicit paths in `test/fixtures/contracts/tsconfig.json`. A future build-layout
-change must update that fixture config rather than weakening the consumer
-fixture.
+`src/index.ts` is the source of truth. `test/contract.test.ts` freezes the runtime names, while `test/consumer-types.test.ts` verifies source and built type consumers. The root includes `AuthKit`, `CatalogRuntime`, creation and storage functions, picker and account OAuth helpers, CLIProxyAPI provisioning and login helpers, external-auth metadata helpers, `DEFAULT_PROVIDERS`, and the public types from `src/types.ts`.
+
+Consumers import the package root. Internal file paths aren't compatibility surfaces.
 
 ## CLI
 
-The executable name is `ai-auth-kit`. Its stable commands are `init`,
-`providers`, `login`, `models`, `use`, `current`, `doctor`, and `path`.
-Every command accepts `--project name`; `-p` remains its alias. `--help`, `-h`,
-and `help` print the help fixture. The default project is `default`, stored in
-`./.ai-auth-kit/default`. `--project` and `-p` require a following nonempty
-value that is not another flag. Missing, empty, or flag-valued arguments exit
-nonzero and write exactly `Missing value for --project` to stderr.
+`src/cli.ts` and `test/fixtures/contracts/cli-help.txt` define the CLI. Stable commands are `init`, `providers`, `login`, `models`, `use`, `current`, `doctor`, `catalog status`, `catalog refresh`, and `path`. Project storage accepts `--project name` and `-p name`. `--version` and `-V` print `0.2.0`; `--help` and `-h` print help. The default project is `default`. A project flag without a usable following value exits nonzero with `Missing value for --project` on stderr.
 
-## Storage and serialized state
+## Storage and authentication
 
-Project state lives at `./.ai-auth-kit/<sanitized-project>/config.json` and
-`secrets.json`. Global state lives at `$XDG_CONFIG_HOME/ai-auth-kit/`, or
-`~/.config/ai-auth-kit/` when `XDG_CONFIG_HOME` is unset. JSON files are
-pretty-printed with a trailing newline and written with mode `0600`.
+Project state lives below `./.ai-auth-kit/<sanitized-project>/`. Global state is opt-in below `$XDG_CONFIG_HOME/<sanitized-app>`, with `~/.config` as the XDG fallback. Managed directories use mode `0700`; JSON files use mode `0600`. `config.json` stores credential metadata and selected model state. `secrets.json` stores API-key material by secret reference.
 
-`config.json` contains `credentials`, optional `selectedModel` with
-`providerId`, `modelId`, and `updatedAt`, plus top-level `updatedAt`.
-`secrets.json` maps secret references to strings. Credentials are exactly the
-`api-key`, `env`, `oauth-external`, and `none` tagged shapes. API-key references
-use `provider:<provider-id>:api-key`.
+Reviewed local policy controls API key, environment, external OAuth, and no-auth methods. Models.dev metadata cannot add executable or authentication behavior. OpenAI and GitHub Copilot use local account OAuth adapters. Anthropic and Google use the reviewed CLIProxyAPI adapter after risk confirmation. Exact external binary flags aren't a user contract in this document because no captured upstream help fixture is stored here.
 
-## Auth, CLIProxyAPI, and remote data
+CLIProxyAPI execution uses an explicit validated path or a verified cache entry. Environment `PATH` is ignored. Archive shape, checksum text, selected archive digest, file type, permissions, ownership, and opened inode are checked before execution. A checksum authenticates bytes only relative to a trusted expected digest. It doesn't prove publisher identity.
 
-Provider auth methods are local reviewed policy: API key, environment,
-external OAuth, or no auth. OpenAI and GitHub Copilot use local account OAuth
-flows. Anthropic and Google external OAuth use reviewed CLIProxyAPI handling.
-Claude launches `--claude-login`; Google launches `--antigravity-login`.
+## Catalog and historical selections
 
-CLIProxyAPI must never discover or execute a binary implicitly from `PATH`.
-Only an explicit caller path that passes future security validation, or a
-verified local cache/download, may be run. Remote model catalog data is inert:
-it may describe provider/model metadata only. It cannot supply commands,
-OAuth behavior, executable paths, headers, request bodies, credentials, or
-transport policy.
+Models.dev source data comes from `https://models.dev/api.json`. The normalized cache is versioned and stores source URL, ETag, capture time, content SHA-256, and schema provenance. Failed refreshes use the last valid cache or the tracked snapshot. No catalog size is part of the compatibility contract.
 
-## Historical selections and baseline differences
+Current catalog entries drive new selections. Saved selections include immutable provider and model metadata. Removal upstream hides the entry from new choices without invalidating the saved historical selection or rewriting auth state.
 
-When a current catalog no longer contains a configured provider or model, the
-persisted historical selection remains resolvable from its immutable saved
-metadata. Removed/deprecated entries are hidden from new picker choices. The
-state must not be silently rewritten.
+## Installer scope and trust
 
-Todo 1 sealed restores record two intentional pre-merge differences, without
-selecting either tree wholesale: standalone currently discovers CLIProxyAPI on
-`PATH` and uses Google `--login`; embedded currently has no implicit `PATH`
-discovery and uses `--antigravity-login`. Both current copies return no
-selection when a selected model disappears. These are baseline facts, not
-accepted 0.2.0 behavior; later implementation todos close them under this
-contract.
+Release artifacts cover only Linux x64 and arm64 with glibc and musl CLI variants. Expected public install and update inputs require the signed bundle accepted by the public manager; this repository claims no existing public release or successful public attestation verification. Local QA uses a different manager feature, key, and receipt name. Local fixture success must not be described as a GitHub attestation. `SHA256SUMS` is checked for exact manifest consistency but is not a provenance fallback when the signed bundle is absent.
 
-| Contract surface | Standalone sealed restore | Embedded sealed restore | 0.2.0 target |
-| --- | --- | --- | --- |
-| Root exports | Same 33 runtime exports and public type exports | Same | Preserve root API |
-| CLI commands/help | Same eight commands, `--project`/`-p`, same help | Same | Preserve |
-| Missing `--project`/`-p` value | Silently falls back to default or accepts a flag as the name | Same | Nonzero; exact `Missing value for --project` stderr |
-| Storage | Same project/global paths, JSON bytes, and `0600` files | Same | Preserve |
-| Local auth methods | Same API key/env/external OAuth/none policy | Same | Preserve reviewed local policy |
-| Google CLIProxyAPI login | `--login` | `--antigravity-login` | `--antigravity-login` |
-| Claude CLIProxyAPI login | `--claude-login` | `--claude-login` | `--claude-login` |
-| CLIProxyAPI `PATH` lookup | Implicit lookup present | No implicit lookup | No implicit lookup |
-| Remote catalog | Static local data; no remote authority | Static local data; no remote authority | Inert metadata only |
-| Removed selected model | Resolves `undefined` | Resolves `undefined` | Resolve immutable historical selection |
+The installer operates in a normal user-local threat model. It checks ownership, modes, file types, held directories, immutable objects, and activation state, but doesn't claim isolation from an active hostile process with the same UID after validation. Full limits live in `docs/installer-manager-trust.md`.
+
+## Version and migration
+
+Git dependency updates replace one reviewed full SHA with another and update the lock. Installer install/update verify supplied release inputs. Rollback instead uses retained validated generation state and its prior managed object; uninstall uses held local managed state. Both local-state modes still require the `--release-dir` argument syntactically but do not read it and require no receipt. Unsafe uninstall entries are preserved and stop teardown without rolling back earlier safe removals. Public source and release work is pending explicit approval, so this repository documentation names no public release result.
+
+VoxType migration follows public source approval. It must pin one full SHA, remove local-source coupling, pass online and preseeded-offline disposable QA, then pass VoxType's own complete gates without changing the baseline on failure.

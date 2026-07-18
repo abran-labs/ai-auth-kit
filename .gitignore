@@ -1,8 +1,12 @@
 node_modules/
-dist/
+.omo/
 coverage/
 .DS_Store
 *.log
 .env
 .env.*
 !.env.example
+release/
+build/
+installer-manager/target/
+installer-manager/target-test-manager/
