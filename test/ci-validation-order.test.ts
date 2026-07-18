@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, test } from "bun:test";
 import { assertInstallerCurrent } from "../scripts/build-installer.js";
-import { buildLinuxRelease } from "../scripts/release-build.js";
+import { canonicalReleaseTargets, createReleaseManifest, serializeManifest } from "../scripts/release-artifacts.js";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -64,7 +64,13 @@ test("Given generated release output and stale committed installer bytes, when i
   const installerPath = join(directory, "install.sh");
   const sourceInstaller = await readFile(join(root, "install.sh"), "utf8");
   try {
-    await buildLinuxRelease({ outputDirectory: releaseDirectory, sourceCommit: "a".repeat(40), writeInstaller: false });
+    const manifest = createReleaseManifest(
+      "0.2.0",
+      "a".repeat(40),
+      canonicalReleaseTargets("0.2.0").map((target) => ({ filename: target.filename, bytes: new Uint8Array([1]) })),
+    );
+    await mkdir(releaseDirectory, { recursive: true });
+    await writeFile(manifestPath, serializeManifest(manifest));
     await writeFile(installerPath, "stale installer pins\n");
 
     // When
@@ -81,7 +87,7 @@ test("Given generated release output and stale committed installer bytes, when i
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 120_000);
+}, 30_000);
 
 test("Given the human README, when publication status is described, then source install is clear without release internals", async () => {
   // Given
