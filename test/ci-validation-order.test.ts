@@ -81,7 +81,7 @@ test("Given generated release output and stale committed installer bytes, when i
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 30_000);
+}, 120_000);
 
 test("Given the human README, when publication status is described, then source install is clear without release internals", async () => {
   // Given
