@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
@@ -112,15 +112,15 @@ test("Given malformed project flags, when the 0.2.0 contract is read, then every
   ]);
 });
 
-test("Given sealed-current project flags, when malformed forms are invoked, then the intentional Todo4 gap is characterized", async () => {
+test("Given malformed project flags, when every missing-value form is invoked, then each fails with the exact canonical error", async () => {
   const parsed: unknown = JSON.parse(await readFile(join(fixtureRoot, "project-flag-contract.json"), "utf8"));
   const contract = projectFlagContractSchema.parse(parsed);
   await inTemporaryDirectory(async (home) => {
     for (const args of contract.malformedArgv) {
       const result = await runCli({ args, home });
-      expect(result.exitCode).toBe(0);
-      expect(result.stderr).toBe("");
-      expect(result.stdout).not.toBe(contract.target.stderr);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toBe(contract.target.stderr);
+      expect(result.stdout).toBe("");
     }
   });
 });
@@ -141,6 +141,28 @@ test("Given project storage, when a selected API-key state is written, then byte
     expect(await readFile(secretPath, "utf8")).toBe(await readFile(join(fixtureRoot, "secrets.json"), "utf8"));
     expect((await stat(configPath)).mode & 0o777).toBe(0o600);
     expect((await stat(secretPath)).mode & 0o777).toBe(0o600);
+    expect((await stat(join(configPath, ".."))).mode & 0o777).toBe(0o700);
+  });
+});
+
+test("Given interrupted atomic storage writes, when write and fsync boundaries fail, then prior bytes and no temp files remain", async () => {
+  await inTemporaryDirectory(async (rootDir) => {
+    const storage = projectStorage("interrupt", { rootDir });
+    const state: AuthKitState = { credentials: {}, updatedAt: "2026-07-17T00:00:00.000Z" };
+    await storage.store.write(state);
+    if (!storage.store.path) throw new Error("Expected config path");
+    const prior = await readFile(storage.store.path, "utf8");
+    for (const boundary of ["write", "fsync"] as const) {
+      process.env.AI_AUTH_KIT_INTERRUPT_AT = boundary;
+      await expect(storage.store.write({ ...state, updatedAt: "2026-07-18T00:00:00.000Z" })).rejects.toThrow("Interrupted atomic write");
+      expect(await readFile(storage.store.path, "utf8")).toBe(prior);
+      expect((await readdir(join(storage.store.path, ".."))).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+    }
+    process.env.AI_AUTH_KIT_INTERRUPT_AT = "rename";
+    await expect(storage.store.write({ ...state, updatedAt: "2026-07-19T00:00:00.000Z" })).rejects.toThrow("Interrupted atomic write after rename");
+    expect(await readFile(storage.store.path, "utf8")).not.toBe(prior);
+    expect((await readdir(join(storage.store.path, ".."))).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+    delete process.env.AI_AUTH_KIT_INTERRUPT_AT;
   });
 });
 
@@ -158,14 +180,18 @@ test("Given reviewed providers, when auth methods are inspected, then remote met
 });
 
 test("Given sealed-current CLIProxyAPI login, when Claude or Google is selected, then the documented Google migration gap is explicit", async () => {
+	const binaryPath = join(await mkdtemp(join(tmpdir(), "ai-auth-kit-contract-cli-")), "cli-proxy-api");
+	await writeFile(binaryPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
   const child = new EventEmitter();
-  const claudeLogin = runCliProxyApiLogin("/tmp/cli-proxy-api", provider("anthropic"), { spawn: () => child });
+	const claudeLogin = runCliProxyApiLogin(binaryPath, provider("anthropic"), { spawn: () => child });
+	await Bun.sleep(1);
   child.emit("exit", 0, null);
-  expect(await claudeLogin).toEqual({ binaryPath: "/tmp/cli-proxy-api", args: ["--claude-login"] });
+	expect(await claudeLogin).toEqual({ binaryPath, args: ["--claude-login"] });
   const googleChild = new EventEmitter();
-  const googleLogin = runCliProxyApiLogin("/tmp/cli-proxy-api", provider("google"), { spawn: () => googleChild });
+	const googleLogin = runCliProxyApiLogin(binaryPath, provider("google"), { spawn: () => googleChild });
+	await Bun.sleep(1);
   googleChild.emit("exit", 0, null);
-  expect(await googleLogin).toEqual({ binaryPath: "/tmp/cli-proxy-api", args: ["--login"] });
+	expect(await googleLogin).toEqual({ binaryPath, args: ["--antigravity-login"] });
 });
 
 test("Given a removed configured model, when the sealed-current behavior is characterized, then the intentional gap is explicit", async () => {

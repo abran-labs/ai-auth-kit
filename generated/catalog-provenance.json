@@ -1,0 +1,10 @@
+{
+  "sourceUrl": "https://models.dev/api.json",
+  "sourceSchemaCommit": "800bbc1253753b9ac6675e9b2a123877c3dc5b80",
+  "capturedAt": "2026-07-17T17:12:31-04:00",
+  "etag": null,
+  "sourceContentSha256": "e38484e40478b751cf89099c336ef05fcab66d4313cf47865d639855c6f277ec",
+  "normalizedContentSha256": "6a2b5303c84db35090aac4faf1573fc06d5330b48adace211c21b30612d83f1d",
+  "providerCount": 167,
+  "modelCount": 5693
+}

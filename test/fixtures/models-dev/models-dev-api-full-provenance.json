@@ -1,0 +1,16 @@
+{
+  "sourceUrl": "https://models.dev/api.json",
+  "sourceSchemaCommit": "800bbc1253753b9ac6675e9b2a123877c3dc5b80",
+  "capturedAt": "2026-07-17T17:12:31-04:00",
+  "etag": null,
+  "sourceContentSha256": "e38484e40478b751cf89099c336ef05fcab66d4313cf47865d639855c6f277ec",
+  "fixtureBytes": 3196348,
+  "fixtureSha256": "e38484e40478b751cf89099c336ef05fcab66d4313cf47865d639855c6f277ec",
+  "fixtureScope": "full official response",
+  "providerCount": 167,
+  "modelCount": 5693,
+  "filteredProviders": 0,
+  "filteredModels": 0,
+  "normalizedFixtureBytes": 3476504,
+  "normalizedFixtureSha256": "45ebc066a1171e039b889b272e930d1d31364600ced9e0a2e4cd64691798392e"
+}

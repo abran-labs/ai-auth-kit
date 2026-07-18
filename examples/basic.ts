@@ -1,6 +1,6 @@
-import { createAuthKit } from "../src/index.js";
+import { createProjectAuthKit } from "../src/index.js";
 
-const kit = createAuthKit({ configDir: ".example-ai-auth-kit" });
+const kit = createProjectAuthKit("my-tool");
 
 await kit.saveEnvCredential("openai", "OPENAI_API_KEY");
 await kit.selectModel("openai", "gpt-5-mini");

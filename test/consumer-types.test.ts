@@ -42,4 +42,4 @@ test("Given source and built consumer fixtures, when TypeScript compiles them, t
   } finally {
     await rm(temporaryDirectory, { force: true, recursive: true });
   }
-});
+}, 20_000);

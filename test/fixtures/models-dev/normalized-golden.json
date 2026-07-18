@@ -1,0 +1,61 @@
+{
+  "provenance": {
+    "sourceUrl": "https://models.dev/api.json",
+    "sourceSchemaCommit": "800bbc1253753b9ac6675e9b2a123877c3dc5b80",
+    "capturedAt": "2026-07-17T17:12:31-04:00",
+    "etag": null,
+    "sourceContentSha256": "e38484e40478b751cf89099c336ef05fcab66d4313cf47865d639855c6f277ec"
+  },
+  "providers": [
+    {
+      "id": "github-copilot",
+      "name": "GitHub Copilot",
+      "envNames": ["GITHUB_TOKEN"],
+      "docsUrl": "https://docs.github.com/en/copilot",
+      "authPolicy": {
+        "kind": "specialized",
+        "methods": ["env", "oauth-external"],
+        "envNames": ["GITHUB_TOKEN", "GH_TOKEN", "COPILOT_GITHUB_TOKEN"],
+        "adapter": "copilot-account"
+      },
+      "models": [
+        {
+          "id": "gpt-5.6-terra",
+          "name": "GPT-5.6 Terra",
+          "status": "active",
+          "modalities": { "input": ["image", "pdf", "text"], "output": ["text"] },
+          "limits": { "context": 1050000, "input": 922000, "output": 128000 },
+          "pricing": { "input": 2.5, "output": 15, "cacheRead": 0.25 },
+          "reasoning": true,
+          "tools": true,
+          "structuredOutput": true
+        }
+      ]
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "envNames": ["OPENAI_API_KEY"],
+      "docsUrl": "https://platform.openai.com/docs/models",
+      "authPolicy": {
+        "kind": "specialized",
+        "methods": ["api-key", "env", "oauth-external"],
+        "envNames": ["OPENAI_API_KEY"],
+        "adapter": "openai-account"
+      },
+      "models": [
+        {
+          "id": "gpt-5.6-terra",
+          "name": "GPT-5.6 Terra",
+          "status": "active",
+          "modalities": { "input": ["image", "pdf", "text"], "output": ["text"] },
+          "limits": { "context": 1050000, "input": 922000, "output": 128000 },
+          "pricing": { "input": 2.5, "output": 15, "cacheRead": 0.25 },
+          "reasoning": true,
+          "tools": true,
+          "structuredOutput": true
+        }
+      ]
+    }
+  ]
+}

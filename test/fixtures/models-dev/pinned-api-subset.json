@@ -1,0 +1,40 @@
+{
+  "openai": {
+    "id": "openai",
+    "env": ["OPENAI_API_KEY"],
+    "name": "OpenAI",
+    "doc": "https://platform.openai.com/docs/models",
+    "models": {
+      "gpt-5.6-terra": {
+        "id": "gpt-5.6-terra",
+        "name": "GPT-5.6 Terra",
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+        "limit": { "context": 1050000, "input": 922000, "output": 128000 },
+        "cost": { "input": 2.5, "output": 15, "cache_read": 0.25 },
+        "experimental": { "provider": { "body": { "reasoning": { "mode": "pro" } } } }
+      }
+    }
+  },
+  "github-copilot": {
+    "id": "github-copilot",
+    "env": ["GITHUB_TOKEN"],
+    "name": "GitHub Copilot",
+    "doc": "https://docs.github.com/en/copilot",
+    "models": {
+      "gpt-5.6-terra": {
+        "id": "gpt-5.6-terra",
+        "name": "GPT-5.6 Terra",
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+        "limit": { "context": 1050000, "input": 922000, "output": 128000 },
+        "cost": { "input": 2.5, "output": 15, "cache_read": 0.25 },
+        "experimental": { "provider": { "headers": { "x-remote": "ignore" }, "body": { "tier": "priority" } } }
+      }
+    }
+  }
+}
