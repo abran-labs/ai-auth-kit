@@ -46,9 +46,11 @@ export async function verifyInstallerPins(manifest: ReleaseManifest): Promise<vo
   if (current !== expected) throw new ReleaseVerificationError("install.sh manager pins do not exactly match manifest manager hashes");
 }
 
-export async function verifyLinuxRelease(directory: string): Promise<ReleaseManifest> {
+export type ReleaseVerificationOptions = { readonly verifyInstallerPins?: boolean };
+
+export async function verifyLinuxRelease(directory: string, options: ReleaseVerificationOptions = {}): Promise<ReleaseManifest> {
   const manifest = await verifyReleaseDirectory(directory);
-  await verifyInstallerPins(manifest);
+  if (options.verifyInstallerPins ?? true) await verifyInstallerPins(manifest);
   await Promise.all(manifest.artifacts.map((artifact) => verifyArtifact(directory, artifact)));
   await verifyHostVersion(directory, manifest);
   return manifest;

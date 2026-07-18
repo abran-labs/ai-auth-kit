@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>AI Auth Kit authorization ledger mark</title>
+  <rect width="32" height="32" fill="#f2eee4"/>
+  <path d="M7 4h18v24H7z" fill="#fbf8f0" stroke="#23201b"/>
+  <path d="M12 7v18" stroke="#8d3829"/>
+  <path d="M16 8v3m0 3v8m4-14v7m0 3v6" stroke="#23201b" stroke-width="2"/>
+</svg>

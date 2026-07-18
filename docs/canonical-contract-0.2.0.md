@@ -36,8 +36,6 @@ Release artifacts cover only Linux x64 and arm64 with glibc and musl CLI variant
 
 The installer operates in a normal user-local threat model. It checks ownership, modes, file types, held directories, immutable objects, and activation state, but doesn't claim isolation from an active hostile process with the same UID after validation. Full limits live in `docs/installer-manager-trust.md`.
 
-## Version and migration
+## Version and publication
 
-Git dependency updates replace one reviewed full SHA with another and update the lock. Installer install/update verify supplied release inputs. Rollback instead uses retained validated generation state and its prior managed object; uninstall uses held local managed state. Both local-state modes still require the `--release-dir` argument syntactically but do not read it and require no receipt. Unsafe uninstall entries are preserved and stop teardown without rolling back earlier safe removals. Public source and release work is pending explicit approval, so this repository documentation names no public release result.
-
-VoxType migration follows public source approval. It must pin one full SHA, remove local-source coupling, pass online and preseeded-offline disposable QA, then pass VoxType's own complete gates without changing the baseline on failure.
+Git dependency updates replace one reviewed full SHA with another and update the lock. Installer install/update verify supplied release inputs. Rollback instead uses retained validated generation state and its prior managed object; uninstall uses held local managed state. Both local-state modes still require the `--release-dir` argument syntactically but do not read it and require no receipt. Unsafe uninstall entries are preserved and stop teardown without rolling back earlier safe removals. Public canonical source is published. A tag/release remains pending explicit approval, so this repository documentation names no public release result.

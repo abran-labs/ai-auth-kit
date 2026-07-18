@@ -37,6 +37,7 @@ const completeSuites = [
 	"test/git-dependency.test.ts",
 	"test/package.test.ts",
 	"test/manifest-guard.test.ts",
+	"test/ci-validation-order.test.ts",
 	"test/build-cli.test.ts",
 	"test/release-artifacts.test.ts",
 	"test/release-bundle.test.ts",
@@ -48,7 +49,7 @@ const completeSuites = [
 ] as const;
 const baselineSuiteSet = new Set<string>(baselineSuites);
 const baselineTestCount = 59;
-const completeTestCount = 150;
+const completeTestCount = 154;
 
 test("Given the canonical manifest, when Bun tooling is inspected, then all standalone suites stay native and runnable", async () => {
 	const packageManifest = await readFile(join(root, "package.json"), "utf8");
@@ -63,6 +64,7 @@ test("Given the canonical manifest, when Bun tooling is inspected, then all stan
 	expect(packageManifest).toContain('"qa:minimum-release-age": "bun run scripts/qa-minimum-release-age.ts"');
 	expect(packageManifest).toContain('"qa:git-consumer": "bun run scripts/qa-git-consumer.ts"');
 	expect(packageManifest).toContain('"qa:stale-package": "bun run scripts/qa-stale-package.ts"');
+	expect(packageManifest).toContain('"qa:docs-negative": "bun run scripts/qa-docs-negative.ts"');
 	expect(packageManifest).toContain('"repository": {');
 	expect(packageManifest).toContain('"url": "https://github.com/abran-labs/ai-auth-kit.git"');
 	expect(packageManifest).not.toContain('"peerDependenciesMeta"');

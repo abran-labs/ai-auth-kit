@@ -22,6 +22,8 @@ const unsupportedCliFlags = ["--login", "--google-login", "--verbose", "--token"
 if (unsupportedCliFlags.length < 8) throw new Error("Unsupported CLI flag probes overlap executable help");
 
 const cases: readonly NegativeCase[] = [
+	{ name: "retired identity", injected: `\n${String.fromCodePoint(118, 111, 120, 116, 121, 112, 101)}\n`, expected: "forbidden retired identity" },
+	{ name: "README release internals", injected: "\n`--attestation-receipt` is an internal manager input.\n", expected: "internal release or QA detail" },
 	{ name: "npm command", injected: "\n```text\nnpm install @abran-labs/ai-auth-kit\n```\n", expected: "npm install/publish instruction" },
 	{ name: "missing Git ref", injected: "\n`github:abran-labs/ai-auth-kit`\n", expected: "Git dependency must include" },
 	{ name: "empty Git ref", injected: "\n`github:abran-labs/ai-auth-kit#`\n", expected: "Git dependency must include" },

@@ -69,6 +69,7 @@
     "qa:minimum-release-age": "bun run scripts/qa-minimum-release-age.ts",
     "qa:git-consumer": "bun run scripts/qa-git-consumer.ts",
     "qa:stale-package": "bun run scripts/qa-stale-package.ts",
+    "qa:docs-negative": "bun run scripts/qa-docs-negative.ts",
     "release:build": "bun run scripts/release-build.ts",
     "release:verify": "bun run scripts/release-verify.ts",
     "release:sign-bundle": "bun run scripts/sign-release-bundle.ts",

@@ -10,3 +10,8 @@ release/
 build/
 installer-manager/target/
 installer-manager/target-test-manager/
+docs-site/node_modules/
+docs-site/.astro/
+docs-site/dist/
+docs-site/test-results/
+docs-site/coverage/
