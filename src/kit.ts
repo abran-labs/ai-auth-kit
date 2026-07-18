@@ -1,5 +1,6 @@
 import { DEFAULT_PROVIDERS } from "./catalog.js";
-import { refreshOpenAiCodexToken } from "./account-oauth.js";
+import { CatalogRuntime, type CatalogRefreshOptions, type CatalogStatus } from "./catalog-runtime.js";
+import { resolveRuntimeAuth } from "./kit-runtime-auth.js";
 import { liveSecretRefs, removeCredentialTransaction } from "./credential-removal.js";
 import { projectStorage } from "./storage.js";
 import type {
@@ -29,34 +30,61 @@ function secretRef(providerId: string): string {
   return `provider:${providerId}:api-key`;
 }
 
-const OPENAI_CODEX_REFRESH_WINDOW_MS = 5 * 60_000;
-
-function needsOpenAiCodexRefresh(metadata: Readonly<Record<string, string>>): boolean {
-	const expiresAt = Number(metadata.expiresAt);
-	return !Number.isFinite(expiresAt) || expiresAt <= Date.now() + OPENAI_CODEX_REFRESH_WINDOW_MS;
-}
-
 function indexProviders(providers: readonly ProviderDefinition[]): Map<string, ProviderDefinition> {
   return new Map(providers.map((provider) => [provider.id, provider]));
 }
 
 export class AuthKit {
-  readonly providers: readonly ProviderDefinition[];
   readonly storage: AuthKitOptions["storage"];
   readonly store: AuthKitOptions["storage"]["store"];
   readonly secrets: AuthKitOptions["storage"]["secrets"];
-  private readonly providerIndex: Map<string, ProviderDefinition>;
+  private currentProviders: readonly ProviderDefinition[];
+  private providerIndex: Map<string, ProviderDefinition>;
+  private readonly catalog: CatalogRuntime | undefined;
 
   constructor(options: AuthKitOptions) {
-    this.providers = options.providers ?? DEFAULT_PROVIDERS;
+    this.catalog = options.providers === undefined ? new CatalogRuntime(options.catalog) : undefined;
+    this.currentProviders = options.providers ?? this.catalog?.listProviders() ?? DEFAULT_PROVIDERS;
     this.storage = options.storage;
     this.store = options.storage.store;
     this.secrets = options.storage.secrets;
-    this.providerIndex = indexProviders(this.providers);
+    this.providerIndex = indexProviders(this.currentProviders);
+  }
+
+  get providers(): readonly ProviderDefinition[] {
+    return this.currentProviders;
+  }
+
+  async ready(): Promise<CatalogStatus | undefined> {
+    return this.refreshCatalog();
+  }
+
+  async refreshCatalog(options: CatalogRefreshOptions = {}): Promise<CatalogStatus | undefined> {
+    if (this.catalog === undefined) return undefined;
+    const status = await this.catalog.refresh(options.force);
+    this.setProviders(this.catalog.listProviders());
+    return status;
+  }
+
+  catalogStatus(): CatalogStatus | undefined {
+    return this.catalog?.catalogStatus();
+  }
+
+  startCatalogRefresh(): void {
+    this.catalog?.startHourlyRefresh();
+  }
+
+  dispose(): void {
+    this.catalog?.dispose();
   }
 
   listProviders(): readonly ProviderDefinition[] {
-    return this.providers;
+    return this.currentProviders;
+  }
+
+  private setProviders(providers: readonly ProviderDefinition[]): void {
+    this.currentProviders = providers;
+    this.providerIndex = indexProviders(providers);
   }
 
   getProvider(providerId: string): ProviderDefinition {
@@ -153,7 +181,12 @@ export class AuthKit {
   async selectModel(providerId: string, modelId: string): Promise<SelectedModel> {
     const provider = this.getProvider(providerId);
     const model = this.getModel(provider.id, modelId);
-    const selectedModel: SelectedModel = { providerId: provider.id, modelId: model.id, updatedAt: now() };
+    const selectedModel: SelectedModel = {
+      providerId: provider.id,
+      modelId: model.id,
+      updatedAt: now(),
+      snapshot: { provider, model },
+    };
     await this.patchState((state) => ({ ...state, selectedModel, updatedAt: now() }));
     return selectedModel;
   }
@@ -165,85 +198,18 @@ export class AuthKit {
   async resolveSelection(): Promise<ResolvedSelection | undefined> {
     const state = await this.readState();
     if (!state.selectedModel) return undefined;
-		const provider = this.providers.find(
-			(entry) => entry.id === state.selectedModel?.providerId,
-		);
-		if (!provider) return undefined;
-		const model = provider.models.find(
-			(entry) => entry.id === state.selectedModel?.modelId,
-		);
-		if (!model) return undefined;
-		return { provider, model, credential: state.credentials[provider.id] };
+    const provider = this.currentProviders.find((entry) => entry.id === state.selectedModel?.providerId);
+    const model = provider?.models.find((entry) => entry.id === state.selectedModel?.modelId);
+    if (provider !== undefined && model !== undefined) return { provider, model, credential: state.credentials[provider.id] };
+    const snapshot = state.selectedModel.snapshot;
+    if (snapshot?.provider.id !== state.selectedModel.providerId || snapshot.model.id !== state.selectedModel.modelId) return undefined;
+    return { provider: snapshot.provider, model: snapshot.model, credential: state.credentials[snapshot.provider.id] };
   }
 
   async runtimeAuth(providerId: string): Promise<RuntimeAuth> {
     const provider = this.getProvider(providerId);
     const credential = await this.getCredential(provider.id);
-    const env: Record<string, string> = {};
-
-    if (credential?.type === "api-key") {
-      const value = await this.secrets.get(credential.secretRef);
-      if (value && provider.envVars[0]) env[provider.envVars[0]] = value;
-    }
-
-    if (credential?.type === "env") {
-      const value = process.env[credential.envVar];
-      if (value) env[credential.envVar] = value;
-    }
-
-    if (credential?.type === "oauth-external") {
-      let runtimeCredential = credential;
-      let accessToken = credential.metadata.accessTokenRef
-        ? await this.secrets.get(credential.metadata.accessTokenRef)
-        : undefined;
-      let refreshToken = credential.metadata.refreshTokenRef
-        ? await this.secrets.get(credential.metadata.refreshTokenRef)
-        : undefined;
-
-      if (
-        credential.metadata.adapter === "openai-codex" &&
-        credential.metadata.accessTokenRef &&
-        credential.metadata.refreshTokenRef &&
-        refreshToken &&
-        needsOpenAiCodexRefresh(credential.metadata)
-      ) {
-        const refreshed = await refreshOpenAiCodexToken(refreshToken);
-        await this.secrets.set(credential.metadata.accessTokenRef, refreshed.accessToken);
-        await this.secrets.set(credential.metadata.refreshTokenRef, refreshed.refreshToken);
-        const metadata = {
-          ...credential.metadata,
-          expiresAt: String(Date.now() + refreshed.expiresInSeconds * 1000),
-          ...(refreshed.accountId ? { accountId: refreshed.accountId } : {}),
-        };
-        runtimeCredential = { ...credential, metadata };
-        await this.patchState((state) => ({
-          ...state,
-          credentials: { ...state.credentials, [provider.id]: runtimeCredential },
-          updatedAt: now(),
-        }));
-        accessToken = refreshed.accessToken;
-        refreshToken = refreshed.refreshToken;
-      }
-
-      const headers: Record<string, string> = {};
-      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-      if (runtimeCredential.metadata.accountId) headers["ChatGPT-Account-Id"] = runtimeCredential.metadata.accountId;
-      return {
-        providerId: provider.id,
-        credential: runtimeCredential,
-        env,
-        external: {
-          adapter: runtimeCredential.metadata.adapter ?? "oauth-external",
-          ...(accessToken ? { accessToken } : {}),
-          ...(runtimeCredential.metadata.expiresAt ? { expiresAt: Number(runtimeCredential.metadata.expiresAt) } : {}),
-          ...(runtimeCredential.metadata.accountId ? { accountId: runtimeCredential.metadata.accountId } : {}),
-          ...(runtimeCredential.metadata.baseUrl ? { baseUrl: runtimeCredential.metadata.baseUrl } : {}),
-          headers
-        }
-      };
-    }
-
-    return { providerId: provider.id, credential, env };
+    return resolveRuntimeAuth({ provider, credential, secrets: this.secrets, updateCredential: async (next) => this.patchState((state) => ({ ...state, credentials: { ...state.credentials, [provider.id]: next }, updatedAt: now() })) });
   }
 
   private async patchState(mutator: (state: AuthKitState) => AuthKitState): Promise<void> {
@@ -256,9 +222,10 @@ export function createAuthKit(options: AuthKitOptions): AuthKit {
   return new AuthKit(options);
 }
 
-export function createProjectAuthKit(projectName: string, options: ProjectStorageOptions & Pick<AuthKitOptions, "providers"> = {}): AuthKit {
+export function createProjectAuthKit(projectName: string, options: ProjectStorageOptions & Pick<AuthKitOptions, "providers" | "catalog"> = {}): AuthKit {
   return new AuthKit({
     providers: options.providers,
+    catalog: options.catalog,
     storage: projectStorage(projectName, options)
   });
 }

@@ -23,7 +23,7 @@ function defaultCacheRoot(): string {
   return process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache");
 }
 
-export function createCatalogRefresher(options: CatalogRefresherOptions): { readonly refresh: () => Promise<CatalogRefreshResult>; readonly startHourlyRefresh: () => CatalogRefreshTimer } {
+export function createCatalogRefresher(options: CatalogRefresherOptions): { readonly refresh: (force?: boolean) => Promise<CatalogRefreshResult>; readonly startHourlyRefresh: () => CatalogRefreshTimer } {
   const root = options.cacheRoot ?? defaultCacheRoot();
   const fetch = options.fetch ?? globalThis.fetch;
   const now = options.now ?? Date.now;
@@ -34,9 +34,9 @@ export function createCatalogRefresher(options: CatalogRefresherOptions): { read
     const cached = await loadCatalogCache(root);
     return cached === null ? { source: "snapshot", catalog: options.snapshot } : { source: "cache", catalog: cached.catalog };
   };
-  const refresh = async (): Promise<CatalogRefreshResult> => {
+  const refresh = async (force = false): Promise<CatalogRefreshResult> => {
     if (inFlight !== undefined) return inFlight;
-    if (now() - lastAttempt < REFRESH_GUARD_MS) return fallback();
+    if (!force && now() - lastAttempt < REFRESH_GUARD_MS) return fallback();
     lastAttempt = now();
     inFlight = (async () => {
       const existing = await loadCatalogCache(root);

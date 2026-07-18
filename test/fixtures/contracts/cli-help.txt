@@ -8,6 +8,7 @@ Usage:
   ai-auth-kit use [provider] [model] [--project name]
   ai-auth-kit current [--project name]
   ai-auth-kit doctor [--project name]
+  ai-auth-kit catalog <status|refresh> [--project name]
   ai-auth-kit path [--project name]
 
 Storage defaults to ./.ai-auth-kit/<project-name>.

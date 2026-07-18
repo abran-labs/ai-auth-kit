@@ -90,7 +90,7 @@ test("resolveSelection returns undefined for stale removed models", async () => 
 		credentials: {},
 		selectedModel: {
 			providerId: "google",
-			modelId: "gemini-2.5-flash-lite",
+			modelId: "removed-model",
 			updatedAt: new Date().toISOString(),
 		},
 		updatedAt: new Date().toISOString(),

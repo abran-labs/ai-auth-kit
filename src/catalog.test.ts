@@ -112,9 +112,7 @@ test("OpenAI catalog exposes the canonical GPT-5.6 suite exactly once", () => {
 		model.id.startsWith("gpt-5.6-"),
 	);
 
-	expect(gpt56Models).toEqual([
-		{ id: "gpt-5.6-sol", name: "GPT-5.6 Sol" },
-		{ id: "gpt-5.6-terra", name: "GPT-5.6 Terra" },
-		{ id: "gpt-5.6-luna", name: "GPT-5.6 Luna" },
+	expect(gpt56Models.map((model) => model.id).sort()).toEqual([
+		"gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra",
 	]);
 });

@@ -1,6 +1,6 @@
 {
   "name": "@abran-labs/ai-auth-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reusable AI provider authentication and model selection kit for CLI tools.",
   "type": "module",
   "packageManager": "bun@1.3.14",
@@ -26,6 +26,8 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "bun test",
     "test:types": "tsc -p tsconfig.test.json --noEmit",
+    "audit:dependencies": "bun run scripts/audit-dependencies.ts",
+    "qa:minimum-release-age": "bun run scripts/qa-minimum-release-age.ts",
     "dev": "bun run src/cli.ts"
   },
   "dependencies": {
@@ -36,14 +38,6 @@
     "@types/bun": "^1.3.14",
     "@types/node": "^25.0.1",
     "typescript": "^5.9.3"
-  },
-  "peerDependenciesMeta": {
-    "@oh-my-pi/pi-ai": {
-      "optional": true
-    },
-    "ai": {
-      "optional": true
-    }
   },
   "keywords": [
     "ai",

@@ -202,7 +202,7 @@ test("provider picker includes account OAuth providers", async () => {
 		expect.objectContaining({ options: expect.arrayContaining([
 			expect.objectContaining({ value: "openai", label: "OpenAI" }),
 			expect.objectContaining({ value: "anthropic", label: "Anthropic" }),
-			expect.objectContaining({ value: "google", label: "Google Gemini" }),
+			expect.objectContaining({ value: "google", label: "Google" }),
 			expect.objectContaining({ value: "github-copilot", label: "GitHub Copilot" }),
 		]) }),
 	);

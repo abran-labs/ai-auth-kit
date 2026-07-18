@@ -26,6 +26,23 @@ const noAuthCredential = z.object({
   createdAt: isoDate
 });
 
+const modelDefinitionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  contextWindow: z.number().int().nonnegative().optional(),
+  tags: z.array(z.string().min(1)).optional(),
+});
+
+const providerDefinitionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  envVars: z.array(z.string().min(1)),
+  authMethods: z.array(z.enum(["api-key", "env", "oauth-external", "none"])),
+  models: z.array(modelDefinitionSchema),
+  docsUrl: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export const storedCredentialSchema = z.discriminatedUnion("type", [
   apiKeyCredential,
   envCredential,
@@ -39,7 +56,8 @@ export const authKitStateSchema = z.object({
     .object({
       providerId: z.string().min(1),
       modelId: z.string().min(1),
-      updatedAt: isoDate
+      updatedAt: isoDate,
+      snapshot: z.object({ provider: providerDefinitionSchema, model: modelDefinitionSchema }).optional(),
     })
     .optional(),
   updatedAt: isoDate
