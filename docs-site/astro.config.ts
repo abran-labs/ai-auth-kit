@@ -28,20 +28,18 @@ export default defineConfig({
           label: "Guides",
           items: [
             { label: "Library", link: "/guides/library/" },
-            { label: "CLI", link: "/guides/cli/" },
             { label: "Providers and auth", link: "/guides/providers-auth/" },
             { label: "Storage and privacy", link: "/guides/storage-privacy/" },
             { label: "Models.dev", link: "/guides/models-dev/" },
             { label: "CLIProxyAPI", link: "/guides/cliproxy/" },
+            { label: "Agent skill", link: "/guides/agent-skill/" },
           ],
         },
         {
           label: "Reference",
           items: [
             { label: "Library API", link: "/reference/api/" },
-            { label: "CLI", link: "/reference/cli/" },
             { label: "Security", link: "/reference/security/" },
-            { label: "Linux installer", link: "/reference/linux-installer/" },
           ],
         },
       ],
