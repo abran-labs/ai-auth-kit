@@ -1,18 +1,12 @@
 import type { Page } from "playwright"
-
-type RouteName = "landing" | "quickstart" | "start"
+import type { DocumentationRoute } from "../scripts/documentation-policy"
 
 type CaptureStateOptions = {
   readonly page: Page
-  readonly route: RouteName
+  readonly route: DocumentationRoute
   readonly scheme: "dark" | "light"
   readonly width: number
 }
-
-const initialTocLabels = {
-  start: "Overview",
-  quickstart: "Overview",
-} as const
 
 async function waitForAnimationFrames(page: Page): Promise<void> {
   await page.evaluate(
@@ -39,8 +33,8 @@ export async function settleCaptureState(options: CaptureStateOptions): Promise<
   })
   await waitForAnimationFrames(options.page)
 
-  if (options.route === "landing") return []
-  const expected = initialTocLabels[options.route]
+  if (options.route.tocLabel === undefined) return []
+  const expected = options.route.tocLabel
   await options.page.waitForFunction((label) => {
     const summary = document.querySelector("mobile-starlight-toc .display-current")
     const visibleTocs = Array.from(
@@ -87,7 +81,7 @@ export async function settleCaptureState(options: CaptureStateOptions): Promise<
       y: window.scrollY,
     }
   })
-  const label = `${options.route} ${options.scheme} at ${options.width}px`
+  const label = `${options.route.name} ${options.scheme} at ${options.width}px`
   const findings: string[] = []
   if (state.x !== 0 || state.y !== 0)
     findings.push(`${label} capture scroll is ${state.x},${state.y}`)

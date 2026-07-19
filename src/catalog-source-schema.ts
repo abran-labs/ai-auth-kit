@@ -88,5 +88,12 @@ export const CatalogProvenanceSchema = z.object({
   sourceContentSha256: z.string().regex(/^[a-f0-9]{64}$/),
 }).strip();
 
+export const ReleaseCatalogProvenanceSchema = CatalogProvenanceSchema.extend({
+  normalizedContentSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  providerCount: BoundedIntegerSchema,
+  modelCount: BoundedIntegerSchema,
+}).strict();
+
 export type ModelsDevSource = z.output<typeof ModelsDevSourceSchema>;
 export type CatalogProvenance = z.output<typeof CatalogProvenanceSchema>;
+export type ReleaseCatalogProvenance = z.output<typeof ReleaseCatalogProvenanceSchema>;

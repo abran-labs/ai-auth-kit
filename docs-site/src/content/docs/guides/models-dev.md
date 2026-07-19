@@ -15,7 +15,7 @@ are intentionally not part of the compatibility contract because the source chan
 5. With no valid cache, use the tracked bundled snapshot.
 
 `ready()` refreshes once for normal startup. `startCatalogRefresh()` opts a long-running process
-into hourly attempts. `catalog refresh` requests a refresh from the CLI.
+into hourly attempts. Call `refreshCatalog()` when the host application needs an explicit refresh.
 
 ## What remote metadata cannot do
 

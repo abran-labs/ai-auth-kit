@@ -3,7 +3,12 @@ title: Use the library
 description: Create an AuthKit instance, save credentials, select a model, and resolve runtime auth.
 ---
 
-Import the package root. Internal source paths are not compatibility surfaces.
+Install exact version `1.0.0`, then import the package root. Internal source paths are not
+compatibility surfaces.
+
+```sh
+bun add @abran-labs/ai-auth-kit@1.0.0
+```
 
 ## Create a project kit
 
@@ -52,3 +57,9 @@ The selected provider and model are snapshotted. If Models.dev later removes tha
 
 Long-running processes may call `startCatalogRefresh()` for hourly refresh attempts. Call
 `dispose()` during shutdown to stop the timer.
+
+## Keep command ownership in the host
+
+Connect these calls to your application's existing command router or UI. AI Auth Kit does not
+define generic command names, parse host arguments, format host output, or send model requests.
+Use a custom `PromptAdapter` when your host already owns prompt rendering and logging.

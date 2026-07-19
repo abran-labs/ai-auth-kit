@@ -17,6 +17,7 @@ const requiredFiles = [
   "src/content/docs/start/index.md",
   "src/content/docs/start/quickstart.md",
   "src/content/docs/guides/library.md",
+  "src/content/docs/guides/agent-skill.md",
   "src/content/docs/reference/api.md",
   "public/social-card.svg",
   "../.github/workflows/pages.yml",
@@ -79,9 +80,7 @@ describe("template contract", () => {
     expect(landing).toContain('localStorage.getItem("starlight-theme")')
     expect(landing).toContain('class="skip-link"')
     expect(landing).toContain('aria-label="Color theme"')
-    expect(landing).toContain(
-      "bun add --ignore-scripts --exact github:abran-labs/ai-auth-kit#adcb364fa086ec1a854d2b412a5efbd530595b98",
-    )
+    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
     expect(landing).not.toContain("--exact \\")
   })
 
@@ -98,36 +97,34 @@ describe("template contract", () => {
     expect(workflow).toContain("actions/upload-pages-artifact@")
   })
 
-  test("documents current CLI and runtime API behavior", async () => {
-    // Given: public CLI and start documentation
+  test("documents current library and runtime API behavior", async () => {
+    // Given: public library and start documentation
     const [reference, guide, start] = await Promise.all([
-      Bun.file(resolve(root, "src/content/docs/reference/cli.md")).text(),
-      Bun.file(resolve(root, "src/content/docs/guides/cli.md")).text(),
+      Bun.file(resolve(root, "src/content/docs/reference/api.md")).text(),
+      Bun.file(resolve(root, "src/content/docs/guides/library.md")).text(),
       Bun.file(resolve(root, "src/content/docs/start/index.md")).text(),
     ])
 
     // When: claims are compared with the implementation contract
-    // Then: output and required provider input are described exactly
-    expect(reference).toContain("Print the selected provider and model")
-    expect(reference).not.toContain("auth state")
-    expect(guide.replaceAll("\n", " ")).toContain(
-      "project counts, selected model, and storage paths",
-    )
+    // Then: library API and host-owned interaction are described exactly
+    expect(reference).toContain("loginWithPrompts")
+    expect(reference).toContain("CLIProxyAPI")
+    expect(guide).toContain("createProjectAuthKit")
     expect(start).toContain("runtimeAuth(providerId)")
   })
 
-  test("keeps install-command scrolling explicit", async () => {
-    // Given: install commands wider than the landing and docs reading columns
+  test("keeps exact npm installation consistent across primary entry points", async () => {
+    // Given: package installation appears on the landing and quickstart
     const [landing, quickstart] = await Promise.all([
       Bun.file(resolve(root, "src/pages/index.astro")).text(),
       Bun.file(resolve(root, "src/content/docs/start/quickstart.md")).text(),
     ])
 
-    // When: their adjacent instructions are inspected
-    // Then: each surface tells readers how to reveal the full pinned SHA
-    expect(landing).toContain("Scroll sideways to read the full pinned SHA")
-    expect(quickstart).toContain("Scroll the command block sideways")
-    expect(quickstart).not.toContain("On narrow screens")
+    // When: their commands are inspected
+    // Then: each surface uses the exact public npm release
+    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(`${landing}\n${quickstart}`).not.toContain("github:abran-labs/ai-auth-kit#")
   })
 
   test("settles top-of-page TOC state before visual capture", async () => {
@@ -140,8 +137,7 @@ describe("template contract", () => {
     // When: the screenshot sequence is inspected
     // Then: it awaits the route-specific initial TOC state before capture
     expect(browserQa).toContain("settleCaptureState")
-    expect(captureStateQa).toContain('start: "Overview"')
-    expect(captureStateQa).toContain('quickstart: "Overview"')
+    expect(captureStateQa).toContain("options.route.tocLabel")
     expect(captureStateQa).toContain("document.fonts.ready")
     expect(captureStateQa).toContain("animation.cancel()")
     expect(captureStateQa).toContain("requestAnimationFrame")
@@ -166,5 +162,25 @@ describe("template contract", () => {
     expect(interactionQa).toContain("getClientRects")
     expect(captureStateQa).toContain('probe.style.color = "var(--accent-strong)"')
     expect(captureStateQa).toContain("getComputedStyle(probe).color")
+  })
+
+  test("routes every authored typography value through DESIGN tokens", async () => {
+    const [design, globalStyles, landingComponents] = await Promise.all([
+      Bun.file(resolve(root, "DESIGN.md")).text(),
+      Bun.file(resolve(root, "src/styles/global.css")).text(),
+      Bun.file(resolve(root, "src/styles/landing-components.css")).text(),
+    ])
+
+    for (const token of [
+      "--tracking-heading",
+      "--weight-site-title",
+      "--leading-section",
+    ] as const) {
+      expect(design).toContain(token)
+      expect(`${globalStyles}\n${landingComponents}`).toContain(`var(${token})`)
+    }
+    expect(globalStyles).not.toContain("letter-spacing: -0.025em")
+    expect(globalStyles).not.toContain("font-weight: 720")
+    expect(landingComponents).not.toContain("line-height: 1.12")
   })
 })

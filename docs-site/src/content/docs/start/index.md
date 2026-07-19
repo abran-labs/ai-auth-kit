@@ -3,18 +3,20 @@ title: Start here
 description: Choose the AI Auth Kit path that matches your application or workflow.
 ---
 
-AI Auth Kit is both a TypeScript library and an interactive command-line tool. Both use the same
-provider catalog, local authentication policy, project storage, and model selection state.
+AI Auth Kit is a TypeScript library. Your host application owns commands and user experience while
+the kit provides provider catalog, local authentication policy, project storage, and model state.
 
 ## Choose your path
 
-- **Building a CLI or application?** Start with the [library guide](../guides/library/).
-- **Configuring a project by hand?** Start with the [CLI guide](../guides/cli/).
+- **Building a host workflow?** Start with the [library guide](../guides/library/).
+- **Adding host-owned prompts?** Use `loginWithPrompts()` with a `PromptAdapter` from the
+  [library API reference](../reference/api/).
+- **Helping a coding agent implement it?** Install the separate [agent skill](../guides/agent-skill/).
 - **Need a working setup now?** Complete the [60-second quickstart](./quickstart/).
 
-:::note[Source distribution today]
-The project is consumed from Git by an exact commit. It is not published to npm or GitHub
-Packages, and public installer release artifacts are still pending.
+:::note[Library distribution]
+AI Auth Kit is a pure library installed as exact npm version `1.0.0`. It ships no generic
+executable or global command surface. Host applications own commands and user experience.
 :::
 
 ## What the kit owns
