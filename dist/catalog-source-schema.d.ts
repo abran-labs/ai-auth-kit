@@ -39,5 +39,16 @@ export declare const CatalogProvenanceSchema: z.ZodObject<{
     etag: z.ZodNullable<z.ZodString>;
     sourceContentSha256: z.ZodString;
 }, z.core.$strip>;
+export declare const ReleaseCatalogProvenanceSchema: z.ZodObject<{
+    sourceUrl: z.ZodLiteral<"https://models.dev/api.json">;
+    sourceSchemaCommit: z.ZodString;
+    capturedAt: z.ZodISODateTime;
+    etag: z.ZodNullable<z.ZodString>;
+    sourceContentSha256: z.ZodString;
+    normalizedContentSha256: z.ZodString;
+    providerCount: z.ZodInt;
+    modelCount: z.ZodInt;
+}, z.core.$strict>;
 export type ModelsDevSource = z.output<typeof ModelsDevSourceSchema>;
 export type CatalogProvenance = z.output<typeof CatalogProvenanceSchema>;
+export type ReleaseCatalogProvenance = z.output<typeof ReleaseCatalogProvenanceSchema>;

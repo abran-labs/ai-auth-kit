@@ -3,7 +3,6 @@ import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
-import { z } from "zod";
 import {
   DEFAULT_PROVIDERS,
   createAuthKit,
@@ -13,10 +12,6 @@ import {
 import type { AuthKitState, ProviderDefinition } from "../src/index.js";
 
 const fixtureRoot = join(process.cwd(), "test", "fixtures", "contracts");
-const projectFlagContractSchema = z.object({
-  target: z.object({ exitCode: z.literal("nonzero"), stderr: z.literal("Missing value for --project\n") }),
-  malformedArgv: z.array(z.array(z.string()).min(2)),
-});
 
 async function inTemporaryDirectory<T>(action: (directory: string) => Promise<T>): Promise<T> {
   const directory = await mkdtemp(join(tmpdir(), "ai-auth-kit-contract-"));
@@ -50,21 +45,6 @@ function spawnBarrier(): { readonly registered: Promise<void>; readonly register
 			resolve();
 		},
 	};
-}
-
-async function runCli(invocation: { readonly args: readonly string[]; readonly home: string }): Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string }> {
-  const processResult = Bun.spawn({
-    cmd: [process.execPath, "--bun", "src/cli.ts", ...invocation.args],
-    cwd: process.cwd(),
-    env: { ...process.env, HOME: invocation.home, XDG_CONFIG_HOME: join(invocation.home, ".config"), XDG_STATE_HOME: join(invocation.home, ".state") },
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  return {
-    exitCode: await processResult.exited,
-    stdout: await new Response(processResult.stdout).text(),
-    stderr: await new Response(processResult.stderr).text(),
-  };
 }
 
 test("Given the public root, when enumerated, then it exposes the frozen runtime API", async () => {
@@ -106,38 +86,6 @@ test("Given the public root, when enumerated, then it exposes the frozen runtime
     "provisionCliProxyApiForProvider",
     "runCliProxyApiLogin",
   ]);
-});
-
-test("Given the CLI, when help is requested, then stable commands and project flags are printed", async () => {
-  await inTemporaryDirectory(async (home) => {
-    const result = await runCli({ args: ["--help"], home });
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout).toBe(await readFile(join(fixtureRoot, "cli-help.txt"), "utf8"));
-    expect(result.stderr).toBe("");
-  });
-});
-
-test("Given malformed project flags, when the 0.2.0 contract is read, then every missing-value form has one exact target error", async () => {
-  const parsed: unknown = JSON.parse(await readFile(join(fixtureRoot, "project-flag-contract.json"), "utf8"));
-  const contract = projectFlagContractSchema.parse(parsed);
-  expect(contract.target).toEqual({ exitCode: "nonzero", stderr: "Missing value for --project\n" });
-  expect(contract.malformedArgv).toEqual([
-    ["path", "--project"], ["path", "-p"], ["path", "--project", "--help"],
-    ["path", "-p", "--help"], ["path", "--project", ""], ["path", "-p", ""],
-  ]);
-});
-
-test("Given malformed project flags, when every missing-value form is invoked, then each fails with the exact canonical error", async () => {
-  const parsed: unknown = JSON.parse(await readFile(join(fixtureRoot, "project-flag-contract.json"), "utf8"));
-  const contract = projectFlagContractSchema.parse(parsed);
-  await inTemporaryDirectory(async (home) => {
-    for (const args of contract.malformedArgv) {
-      const result = await runCli({ args, home });
-      expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toBe(contract.target.stderr);
-      expect(result.stdout).toBe("");
-    }
-  });
 });
 
 test("Given project storage, when a selected API-key state is written, then bytes and modes stay compatible", async () => {

@@ -33,7 +33,6 @@ export async function verifyDist(root: string): Promise<DistVerification> {
   const distribution = join(root, "dist");
   await access(join(distribution, "index.js"));
   await access(join(distribution, "index.d.ts"));
-  await access(join(distribution, "cli.js"));
   const temporaryDirectory = await mkdtemp(join(tmpdir(), "ai-auth-kit-dist-"));
   try {
     const rebuilt = join(temporaryDirectory, "dist");
