@@ -44,8 +44,9 @@ font appears.
 Tokens: display `clamp(3rem, 7vw, 6.75rem)`; H1 `clamp(2.25rem, 5vw, 4.25rem)`; H2
 `clamp(1.75rem, 3vw, 2.625rem)`; H3 `1.375rem`; lead `1.1875rem`; body `1rem`; small
 `0.875rem`; label `0.75rem`. Display tracking uses `--tracking-display`; labels use
-`--tracking-label`. Line-height, measure, and weights use declared `--leading-*`, `--measure-*`,
-and `--weight-*` tokens. The authorization mark uses `--ledger-type-record`,
+`--tracking-label`; shared heading tracking uses `--tracking-heading`. Site-title weight uses
+`--weight-site-title`; section heading line-height uses `--leading-section`. Other line-height,
+measure, and weights use declared `--leading-*`, `--measure-*`, and `--weight-*` tokens. The authorization mark uses `--ledger-type-record`,
 `--ledger-type-number`, and `--ledger-signal-stroke` for its SVG typography and signal weight.
 
 ## 4. Spacing & Layout

@@ -8,6 +8,8 @@ methods a provider may use. Remote metadata cannot add login commands or executa
 
 ## Supported choices
 
+*Scroll tables sideways to read every column on narrow screens.*
+
 | Provider | API key | Environment | Account login |
 | --- | --- | --- | --- |
 | OpenAI | Yes | `OPENAI_API_KEY` | Built-in account OAuth |

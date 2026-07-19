@@ -1,27 +1,25 @@
 ---
 title: 60-second quickstart
-description: Install AI Auth Kit from an exact Git commit and verify library or CLI access.
+description: Install exact AI Auth Kit 1.0.0 and verify root library access.
 ---
 
 ## Prerequisites
 
 - Bun 1.3.14 or newer
-- A GitHub network connection for the first install
+- A TypeScript Bun or Node ESM host application
 
-## Step 1 — Add the exact source commit
+*Scroll command blocks sideways when their full contents extend past the reading column.*
 
-Scroll the command block sideways to read and copy the complete pinned SHA at any viewport width.
+## Step 1 — Add exact version 1.0.0
 
 ```sh
-bun add --ignore-scripts --exact github:abran-labs/ai-auth-kit#adcb364fa086ec1a854d2b412a5efbd530595b98
-bun install --ignore-scripts --frozen-lockfile
+bun add @abran-labs/ai-auth-kit@1.0.0
 ```
 
-Review the complete commit before changing the SHA. `bun.lock` must record the same commit.
+Commit the resulting `bun.lock`. Use `bun install --frozen-lockfile` in CI so direct and transitive
+versions remain reproducible.
 
-## Step 2 — Choose library or CLI
-
-### Library
+## Step 2 — Use the root library
 
 ```ts
 import { createProjectAuthKit } from "@abran-labs/ai-auth-kit";
@@ -34,28 +32,19 @@ for (const provider of kit.listProviders()) {
 }
 ```
 
-### CLI
-
-```sh
-ai-auth-kit init --project my-tool
-ai-auth-kit login --project my-tool
-ai-auth-kit use --project my-tool
-ai-auth-kit current --project my-tool
-```
-
-`login` prompts for a provider and supported auth method. `use` prompts for a provider and model.
+AI Auth Kit provides runtime APIs only. Your host owns command names, routing, prompts, output, and
+provider-client calls.
 
 ## Step 3 — Verify storage
 
-```sh
-ai-auth-kit path --project my-tool
-ai-auth-kit doctor --project my-tool
-```
+`createProjectAuthKit("my-tool")` stores state below `./.ai-auth-kit/my-tool/`. See [Storage and
+privacy](../guides/storage-privacy/) before deciding whether project or global storage fits your
+application.
 
-The project path should resolve under `./.ai-auth-kit/my-tool/`. See [Storage and privacy](../../guides/storage-privacy/)
-before deciding whether project or global storage is right for your application.
+## Agent implementation knowledge
 
-:::caution[Installer status]
-Use the Git dependency today. The Linux installer is release-pending and is not the primary
-installation path.
-:::
+The separate [AI Auth Kit agent skill](../guides/agent-skill/) gives Claude Code, OpenCode, or Codex
+version-matched API, auth-flow, host-pattern, and security knowledge. The package runs in your app;
+the skill helps the agent implement it correctly. Neither installs the other. For agent work,
+bundled skill references are primary knowledge.
+Docs are fallback only when those local references do not answer a question.

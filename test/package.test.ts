@@ -1,23 +1,29 @@
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
+import { z } from "zod";
 import { verifyDist } from "../scripts/verify-dist.js";
 
 const root = process.cwd();
+const packageManifestSchema = z.object({
+  bin: z.never().optional(),
+  exports: z.object({ ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict() }).strict(),
+  files: z.array(z.string()),
+  publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
+  repository: z.object({ type: z.string(), url: z.string() }),
+  scripts: z.record(z.string(), z.string()),
+  version: z.literal("1.0.0"),
+});
 
-test("Given the canonical manifest, when package entry points are inspected, then Git consumers receive tracked source, dist, types, and an executable bin", async () => {
-  const manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8")) as {
-    readonly bin: Readonly<Record<string, string>>;
-    readonly exports: { readonly ".": Readonly<Record<string, string>> };
-    readonly files: readonly string[];
-    readonly repository: { readonly type: string; readonly url: string };
-    readonly scripts: Readonly<Record<string, string>>;
-  };
+test("Given the canonical manifest, when package entry points are inspected, then consumers receive a public 1.0.0 root-only library without an executable bin", async () => {
+  const manifest = packageManifestSchema.parse(JSON.parse(await readFile(join(root, "package.json"), "utf8")));
 
   expect(manifest.exports["."].bun).toBe("./src/index.ts");
   expect(manifest.exports["."].import).toBe("./dist/index.js");
   expect(manifest.exports["."].types).toBe("./dist/index.d.ts");
-  expect(manifest.bin["ai-auth-kit"]).toBe("./dist/cli.js");
+  expect(manifest.publishConfig).toEqual({ access: "public", registry: "https://registry.npmjs.org/" });
+  expect(manifest.version).toBe("1.0.0");
+  expect(manifest.bin).toBeUndefined();
   expect(manifest.files).toEqual([
     "dist",
     "src/account-oauth-browser.ts",
@@ -36,7 +42,6 @@ test("Given the canonical manifest, when package entry points are inspected, the
     "src/catalog-snapshot.ts",
     "src/catalog-source-schema.ts",
     "src/catalog.ts",
-    "src/cli.ts",
     "src/cliproxyapi-archive.ts",
     "src/cliproxyapi-cache.ts",
     "src/cliproxyapi-http.ts",
@@ -65,7 +70,6 @@ test("Given the canonical manifest, when package entry points are inspected, the
   await access(join(root, "dist", "index.js"));
   await access(join(root, "dist", "index.d.ts"));
   await access(join(root, "dist", "index.js.map"));
-  await access(join(root, "dist", "cli.js"));
   const ignored = Bun.spawn({ cmd: ["git", "check-ignore", "dist/index.js"], cwd: root, stdout: "pipe", stderr: "pipe" });
   expect(await ignored.exited, `${await new Response(ignored.stdout).text()}${await new Response(ignored.stderr).text()}`).toBe(1);
 });
@@ -76,16 +80,61 @@ test("Given generated distribution files, when their maps are inspected, then th
   expect(map).not.toMatch(/20\d{2}-\d{2}-\d{2}T/);
 });
 
+test("Given the library-only distribution policy, when forbidden product paths are checked, then no generic executable or binary release surface remains", async () => {
+  const forbiddenPaths = (await readFile(join(root, "test", "fixtures", "contracts", "library-only-forbidden-paths.txt"), "utf8"))
+    .trim()
+    .split("\n");
+
+  for (const forbiddenPath of forbiddenPaths) {
+    await expect(access(join(root, forbiddenPath))).rejects.toThrow();
+  }
+});
+
+test("Given malformed package metadata, when library-only metadata is parsed, then missing root exports and executable bins fail closed", () => {
+  expect(() => packageManifestSchema.parse({ files: [], repository: {}, scripts: {} })).toThrow();
+  expect(() => packageManifestSchema.parse({
+    bin: { "ai-auth-kit": "./dist/cli.js" },
+    exports: { ".": {} },
+    files: [],
+    repository: { type: "git", url: "https://example.invalid/repo.git" },
+    scripts: {},
+  })).toThrow();
+});
+
+test("Given the expanded package payload, when Bun dry-runs packing, then root library entries remain and generic executable artifacts are absent", async () => {
+  const processResult = Bun.spawn({
+    cmd: ["bun", "pm", "pack", "--dry-run", "--ignore-scripts"],
+    cwd: root,
+    stderr: "pipe",
+    stdout: "pipe",
+  });
+  const [exitCode, stderr, stdout] = await Promise.all([
+    processResult.exited,
+    new Response(processResult.stderr).text(),
+    new Response(processResult.stdout).text(),
+  ]);
+  const payloadPaths = stdout
+    .split("\n")
+    .flatMap((line) => {
+      const match = /^packed\s+\S+\s+(.+)$/.exec(line);
+      return match === null ? [] : [match[1] ?? ""];
+    });
+
+  expect(exitCode, stderr).toBe(0);
+  expect(payloadPaths).toContain("dist/index.js");
+  expect(payloadPaths).toContain("dist/index.d.ts");
+  expect(payloadPaths).toContain("src/index.ts");
+  expect(payloadPaths.some((path) => /(?:^|\/)(?:cli|version)(?:\.|\/|$)|(?:^|\/)install\.sh|(?:^|\/)installer-manager(?:\/|$)|(?:^|\/)release(?:\/|$)|(?:^|\/)\.npmrc$|(?:^|\/)(?:\.env|credentials)(?:\.|$)|\.(?:exe|dll|dylib|so|node)$/.test(path))).toBeFalse();
+});
+
 test("Given tracked distribution files, when source is rebuilt in a temporary directory, then every generated byte remains fresh", async () => {
   const result = await verifyDist(root);
   expect(result.files).toBeGreaterThan(0);
 }, 20_000);
 
-test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins the reviewed public source commit", async () => {
+test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins exact public npm version 1.0.0", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
-  expect(readme).toContain("github:abran-labs/ai-auth-kit#adcb364fa086ec1a854d2b412a5efbd530595b98");
-  expect(readme).not.toContain("github:abran-labs/ai-auth-kit#main");
-  expect(readme).toMatch(/(?:isn't|not) published to npm or GitHub Packages/);
-  expect(readme).not.toContain('"@abran-labs/ai-auth-kit": "github:abran-labs/ai-auth-kit#master"');
-  expect(readme).not.toContain("npm install @abran-labs/ai-auth-kit");
+  expect(readme).toContain("bun add @abran-labs/ai-auth-kit@1.0.0");
+  expect(readme).not.toContain("github:abran-labs/ai-auth-kit#");
+  expect(readme).not.toMatch(/@abran-labs\/ai-auth-kit@(?:latest|\^|~|>=)/);
 });

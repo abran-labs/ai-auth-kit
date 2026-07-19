@@ -62,9 +62,12 @@
   --tracking-label: 0.09em;
   --tracking-wordmark: -0.03em;
   --tracking-display: -0.055em;
+  --tracking-heading: -0.025em;
   --leading-display: 0.94;
   --leading-copy: 1.6;
   --leading-body: 1.7;
+  --leading-section: 1.12;
+  --weight-site-title: 720;
   --ledger-stroke: 1;
   --ledger-type-record: 12px;
   --ledger-type-number: 64px;
@@ -167,7 +170,7 @@ header.header {
 h1,
 h2,
 h3 {
-  letter-spacing: -0.025em;
+  letter-spacing: var(--tracking-heading);
 }
 
 .sl-markdown-content :where(h1, h2),
@@ -176,7 +179,7 @@ h1#_top {
 }
 
 .site-title {
-  font-weight: 720;
+  font-weight: var(--weight-site-title);
 }
 
 .sl-markdown-content {

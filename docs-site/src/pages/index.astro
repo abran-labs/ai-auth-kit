@@ -12,11 +12,11 @@ const socialImageAlt = "AI Auth Kit credential ledger mark on warm archival pape
 const startHref = `${base}start/`
 const quickstartHref = `${base}start/quickstart/`
 const libraryHref = `${base}guides/library/`
-const cliHref = `${base}guides/cli/`
+const agentSkillHref = `${base}guides/agent-skill/`
 const securityHref = `${base}reference/security/`
-const title = "AI Auth Kit — Provider auth for TypeScript CLI tools"
+const title = "AI Auth Kit — Provider auth for TypeScript host tools"
 const description =
-  "Authenticate AI providers, choose models, and keep project credentials private with one TypeScript library and CLI."
+  "Authenticate AI providers, choose models, and keep project credentials private with one TypeScript library."
 ---
 
 <!doctype html>
@@ -92,7 +92,7 @@ const description =
     <main id="main-content">
       <section class="landing-shell hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow">Library + CLI / TypeScript</p>
+          <p class="eyebrow">Library / TypeScript</p>
           <h1 id="hero-title">One auth layer for your AI tools.</h1>
           <p class="hero-lead">
             Authenticate providers, choose models, and keep each project's credentials private—
@@ -102,8 +102,8 @@ const description =
             <a class="action action-primary" href={quickstartHref}>Start in 60 seconds</a>
             <a class="action" href={startHref}>Read the docs</a>
           </div>
-          <pre class="install-ledger" tabindex="0" aria-describedby="install-scroll-note" aria-label="Install AI Auth Kit from the current public source commit"><code><span>$</span> bun add --ignore-scripts --exact github:abran-labs/ai-auth-kit#adcb364fa086ec1a854d2b412a5efbd530595b98</code></pre>
-          <p class="scroll-note" id="install-scroll-note">Scroll sideways to read the full pinned SHA.</p>
+          <pre class="install-ledger" tabindex="0" aria-describedby="install-scroll-note" aria-label="Install exact AI Auth Kit npm release"><code><span>$</span> bun add @abran-labs/ai-auth-kit@1.0.0</code></pre>
+          <p class="scroll-note" id="install-scroll-note">Scroll command blocks sideways when needed. This exact runtime package belongs in the Bun lockfile.</p>
         </div>
         <div class="ledger-wrap">
           <svg class="ledger" viewBox="0 0 480 620" role="img" aria-labelledby="ledger-title ledger-desc">
@@ -143,16 +143,16 @@ const description =
               <a href={libraryHref}>Use the library</a>
             </article>
             <article class="pathway">
-              <p class="pathway-number">02 / CLI</p>
-              <h3>Configure a project by hand</h3>
-              <p>Prompt for login and model selection, then inspect exactly where state is stored.</p>
-              <a href={cliHref}>Use the CLI</a>
-            </article>
-            <article class="pathway">
-              <p class="pathway-number">03 / Trust</p>
+              <p class="pathway-number">02 / Trust</p>
               <h3>Read the boundaries first</h3>
               <p>Separate secret storage, remote metadata, optional adapters, and release provenance.</p>
               <a href={securityHref}>Review security</a>
+            </article>
+            <article class="pathway">
+              <p class="pathway-number">03 / Agent skill</p>
+              <h3>Give your coding agent the map</h3>
+              <p>Install version-matched implementation knowledge without adding runtime code.</p>
+              <a href={agentSkillHref}>Install the agent skill</a>
             </article>
           </div>
         </div>

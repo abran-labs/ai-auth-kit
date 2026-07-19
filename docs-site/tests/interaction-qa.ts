@@ -1,10 +1,9 @@
 import type { Browser, Page } from "playwright"
-
-type RouteName = "landing" | "quickstart" | "start"
+import type { DocumentationRoute } from "../scripts/documentation-policy"
 
 type FocusQaOptions = {
   readonly page: Page
-  readonly route: RouteName
+  readonly route: string
   readonly scheme: "dark" | "light"
   readonly width: number
 }
@@ -118,29 +117,75 @@ export async function interactiveFocusFindings(
   return findings
 }
 
-export async function commandScrollFindings(options: FocusQaOptions): Promise<readonly string[]> {
-  if (options.route === "start") return []
-  const selector = options.route === "landing" ? ".install-ledger" : ".expressive-code pre"
-  const label = `${options.route} ${options.scheme} at ${options.width}px command block`
-  const block = options.page.locator(selector).first()
-  if ((await block.count()) === 0) return [`${label} is missing`]
-  const state = await block.evaluate((element) => {
-    const start = element.scrollLeft
-    element.scrollLeft = element.scrollWidth
-    const moved = element.scrollLeft > start
-    element.scrollLeft = 0
-    return {
-      canOverflow: element.scrollWidth > element.clientWidth,
-      moved,
-      overflowX: getComputedStyle(element).overflowX,
-    }
-  })
+export async function commandScrollFindings(
+  options: Omit<FocusQaOptions, "route"> & { readonly route: DocumentationRoute },
+): Promise<readonly string[]> {
+  if (!options.route.commandBlock) return []
+  const selector = options.route.name === "landing" ? ".install-ledger" : ".expressive-code pre"
+  const label = `${options.route.name} ${options.scheme} at ${options.width}px command block`
+  const blocks = options.page.locator(selector)
+  const blockCount = await blocks.count()
+  if (blockCount === 0) return [`${label} is missing`]
   const findings: string[] = []
-  if (!state.canOverflow) findings.push(`${label} does not contain the full scrollable command`)
-  if (state.overflowX !== "auto" && state.overflowX !== "scroll") {
-    findings.push(`${label} resolves overflow-x to ${state.overflowX}`)
+  let hasOverflow = false
+  for (let index = 0; index < blockCount; index += 1) {
+    const state = await blocks.nth(index).evaluate((element) => {
+      const start = element.scrollLeft
+      element.scrollLeft = element.scrollWidth
+      const moved = element.scrollLeft > start
+      element.scrollLeft = 0
+      return {
+        canOverflow: element.scrollWidth > element.clientWidth,
+        moved,
+        overflowX: getComputedStyle(element).overflowX,
+      }
+    })
+    hasOverflow ||= state.canOverflow
+    if (state.canOverflow && state.overflowX !== "auto" && state.overflowX !== "scroll") {
+      findings.push(`${label} ${index + 1} resolves overflow-x to ${state.overflowX}`)
+    }
+    if (state.canOverflow && !state.moved) {
+      findings.push(`${label} ${index + 1} cannot be scrolled horizontally`)
+    }
   }
-  if (!state.moved) findings.push(`${label} cannot be scrolled horizontally`)
+  const cue = options.page.getByText(/Scroll command blocks sideways/i).first()
+  if (hasOverflow && ((await cue.count()) === 0 || !(await cue.isVisible()))) {
+    findings.push(`${label} has overflow without a visible scroll cue`)
+  }
+  return findings
+}
+
+export async function tableScrollFindings(options: FocusQaOptions): Promise<readonly string[]> {
+  const tables = options.page.locator(".sl-markdown-content table")
+  const tableCount = await tables.count()
+  if (tableCount === 0) return []
+  const findings: string[] = []
+  let hasOverflow = false
+  for (let index = 0; index < tableCount; index += 1) {
+    const state = await tables.nth(index).evaluate((element) => {
+      const start = element.scrollLeft
+      element.scrollLeft = element.scrollWidth
+      const moved = element.scrollLeft > start
+      element.scrollLeft = 0
+      return {
+        canOverflow: element.scrollWidth > element.clientWidth,
+        moved,
+        overflowX: getComputedStyle(element).overflowX,
+      }
+    })
+    hasOverflow ||= state.canOverflow
+    const label = `${options.route} ${options.scheme} at ${options.width}px table ${index + 1}`
+    if (state.canOverflow && state.overflowX !== "auto" && state.overflowX !== "scroll") {
+      findings.push(`${label} resolves overflow-x to ${state.overflowX}`)
+    }
+    if (state.canOverflow && !state.moved) findings.push(`${label} cannot be scrolled horizontally`)
+  }
+  const cue = options.page.getByText(/Scroll tables sideways/i).first()
+  if (hasOverflow && ((await cue.count()) === 0 || !(await cue.isVisible()))) {
+    findings.push(
+      `${options.route} ${options.scheme} at ${options.width}px table has overflow without a visible scroll cue`,
+    )
+  }
   return findings
 }
 

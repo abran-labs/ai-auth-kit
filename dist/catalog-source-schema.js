@@ -78,4 +78,9 @@ export const CatalogProvenanceSchema = z.object({
     etag: z.string().min(1).max(512).nullable(),
     sourceContentSha256: z.string().regex(/^[a-f0-9]{64}$/),
 }).strip();
+export const ReleaseCatalogProvenanceSchema = CatalogProvenanceSchema.extend({
+    normalizedContentSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    providerCount: BoundedIntegerSchema,
+    modelCount: BoundedIntegerSchema,
+}).strict();
 //# sourceMappingURL=catalog-source-schema.js.map

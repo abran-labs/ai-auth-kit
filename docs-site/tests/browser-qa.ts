@@ -1,12 +1,13 @@
 import { mkdir } from "node:fs/promises"
 import { resolve } from "node:path"
 import { chromium } from "playwright"
-import { normalizeBase } from "../scripts/contracts"
+import { maintainedDocumentationRoutes, normalizeBase } from "../scripts/contracts"
 import { settleCaptureState } from "./capture-state-qa"
 import {
   commandScrollFindings,
   interactiveFocusFindings,
   reducedMotionFindings,
+  tableScrollFindings,
   themeNavigationFindings,
 } from "./interaction-qa"
 import { keyboardThemeFindings } from "./theme-keyboard-qa"
@@ -23,11 +24,7 @@ class QaFailure extends Error {
 
 const widths = [375, 768, 1280] as const
 const schemes = ["light", "dark"] as const
-const routes = [
-  { name: "landing", path: "" },
-  { name: "start", path: "start/" },
-  { name: "quickstart", path: "start/quickstart/" },
-] as const
+const routes = maintainedDocumentationRoutes
 const root = resolve(import.meta.dir, "..")
 const basePath = normalizeBase(process.env["BASE"] ?? "/ai-auth-kit/")
 const site = process.env["SITE"]?.trim() || "https://abran-labs.github.io"
@@ -143,13 +140,12 @@ try {
               `${route.name} ${scheme} at ${width}px has links escaping base: ${escapedLinks.join(", ")}`,
             )
           }
-          findings.push(
-            ...(await commandScrollFindings({ page, route: route.name, scheme, width })),
-          )
+          findings.push(...(await commandScrollFindings({ page, route, scheme, width })))
+          findings.push(...(await tableScrollFindings({ page, route: route.name, scheme, width })))
           findings.push(
             ...(await interactiveFocusFindings({ page, route: route.name, scheme, width })),
           )
-          findings.push(...(await settleCaptureState({ page, route: route.name, scheme, width })))
+          findings.push(...(await settleCaptureState({ page, route, scheme, width })))
           const suffix = scheme === "dark" ? `-dark-${width}` : `-${width}`
           await page.screenshot({
             fullPage: true,
@@ -197,4 +193,6 @@ try {
 }
 
 if (findings.length > 0) throw new QaFailure(findings)
-console.log(`Browser QA passed; screenshots: ${evidenceDirectory}`)
+console.log(
+  `Browser QA passed; routes: ${routes.length}; captures: ${routes.length * widths.length * schemes.length}; screenshots: ${evidenceDirectory}`,
+)

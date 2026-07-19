@@ -5,7 +5,7 @@ description: Know exactly where AI Auth Kit stores configuration, secrets, and c
 
 ## Project storage
 
-`createProjectAuthKit("my-tool")` and CLI `--project my-tool` use:
+`createProjectAuthKit("my-tool")` uses:
 
 ```text
 ./.ai-auth-kit/my-tool/config.json

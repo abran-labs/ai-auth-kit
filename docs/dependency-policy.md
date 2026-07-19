@@ -4,7 +4,7 @@ AI Auth Kit has two direct runtime npm dependencies:
 
 | Dependency | Active source imports | Reason | License | Locked version |
 | --- | --- | --- | --- | --- |
-| `@clack/prompts` | `src/cli.ts`, `src/picker.ts` | Interactive CLI and picker prompts | MIT | `1.7.0` |
+| `@clack/prompts` | `src/picker.ts` | Host-owned interactive picker prompts | MIT | `1.7.0` |
 | `zod` | State, auth policy, catalog, cache, and CLIProxyAPI boundary modules | Untrusted boundary parsing | MIT | `4.4.3` |
 
 `@oh-my-pi/pi-ai` and `ai` aren't imported runtime dependencies or supported peers.

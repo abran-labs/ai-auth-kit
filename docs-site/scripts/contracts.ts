@@ -1,4 +1,7 @@
 import { resolve } from "node:path"
+import { documentationViolations, maintainedDocumentationRoutes } from "./documentation-policy"
+
+export { documentationViolations, maintainedDocumentationRoutes }
 
 export type ValidationMode = "source" | "dist"
 export type BuildLocation = {
@@ -22,15 +25,13 @@ const requiredSourcePaths = [
   "src/content/docs/start/index.md",
   "src/content/docs/start/quickstart.md",
   "src/content/docs/guides/library.md",
-  "src/content/docs/guides/cli.md",
   "src/content/docs/guides/providers-auth.md",
   "src/content/docs/guides/storage-privacy.md",
   "src/content/docs/guides/models-dev.md",
   "src/content/docs/guides/cliproxy.md",
+  "src/content/docs/guides/agent-skill.md",
   "src/content/docs/reference/api.md",
-  "src/content/docs/reference/cli.md",
   "src/content/docs/reference/security.md",
-  "src/content/docs/reference/linux-installer.md",
   "public/social-card.svg",
   "public/social-card.png",
   "../.github/workflows/pages.yml",
@@ -166,6 +167,7 @@ export async function validateSource(root: string): Promise<readonly string[]> {
         violations.push(`${path}: forbidden authored term ${term}`)
       }
     }
+    violations.push(...documentationViolations(source, path))
   }
 
   return violations.toSorted()
@@ -182,15 +184,13 @@ export async function validateDist(
     "start/index.html",
     "start/quickstart/index.html",
     "guides/library/index.html",
-    "guides/cli/index.html",
     "guides/providers-auth/index.html",
     "guides/storage-privacy/index.html",
     "guides/models-dev/index.html",
     "guides/cliproxy/index.html",
+    "guides/agent-skill/index.html",
     "reference/api/index.html",
-    "reference/cli/index.html",
     "reference/security/index.html",
-    "reference/linux-installer/index.html",
     "robots.txt",
     "sitemap-index.xml",
     "pagefind/pagefind.js",

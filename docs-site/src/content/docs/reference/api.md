@@ -5,6 +5,8 @@ description: Public factories, AuthKit methods, storage helpers, catalog runtime
 
 Import every public symbol from `@abran-labs/ai-auth-kit`. Internal paths are not supported.
 
+*Scroll tables sideways to read every column on narrow screens.*
+
 ## Factories
 
 | Export | Purpose |
