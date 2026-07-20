@@ -13,6 +13,16 @@ require_value() {
   [ -n "$1" ] || fail "missing $2"
 }
 
+is_exact_npm_e404() {
+  printf '%s\n' "$1" | awk '
+    /^npm error code / {
+      code_lines += 1
+      if ($0 == "npm error code E404") exact_e404 += 1
+    }
+    END { exit !(code_lines == 1 && exact_e404 == 1) }
+  '
+}
+
 require_value "${RELEASE_TARBALL:-}" RELEASE_TARBALL
 require_value "${RELEASE_TARBALL_SHA256:-}" RELEASE_TARBALL_SHA256
 require_value "${RELEASE_TARBALL_SRI:-}" RELEASE_TARBALL_SRI
@@ -71,12 +81,30 @@ if [ "$authentication_mode" = 'token' ]; then
   node -e 'const value = JSON.parse(process.argv[1]); if (!Object.hasOwn(value, process.argv[2])) process.exit(1)' "$members" "$principal" || fail "principal is not an organization member"
 fi
 
-if version=$(npm view "$package@${RELEASE_VERSION:-1.0.0}" version --registry=https://registry.npmjs.org/ --json 2>/dev/null); then
-  [ -z "$version" ] || [ "$version" = 'null' ] || fail "package version already exists"
+if tags=$(npm view "$package" dist-tags --registry=https://registry.npmjs.org/ --json 2>&1); then
+  versions=$(npm view "$package" versions --registry=https://registry.npmjs.org/ --json 2>&1) || fail "versions lookup failed"
+elif is_exact_npm_e404 "$tags"; then
+  tags='{}'
+  versions='[]'
+else
+  fail "tag lookup failed"
 fi
-
-tags=$(npm view "$package" dist-tags --registry=https://registry.npmjs.org/ --json) || fail "tag lookup failed"
-node -e 'const tags = JSON.parse(process.argv[1]); if (Object.values(tags).includes(process.argv[2])) process.exit(1)' "$tags" "${RELEASE_VERSION:-1.0.0}" || fail "version is already referenced by an npm tag"
+if node -e 'const versions = JSON.parse(process.argv[1]); if (!Array.isArray(versions) || !versions.every((version) => typeof version === "string")) process.exit(1); if (versions.includes(process.argv[2])) process.exit(2)' "$versions" "${RELEASE_VERSION:-1.0.0}"; then
+  :
+else
+  case "$?" in
+    2) fail "package version already exists" ;;
+    *) fail "versions lookup is invalid" ;;
+  esac
+fi
+if node -e 'const tags = JSON.parse(process.argv[1]); if (tags === null || Array.isArray(tags) || typeof tags !== "object" || !Object.values(tags).every((tag) => typeof tag === "string")) process.exit(1); if (Object.values(tags).includes(process.argv[2])) process.exit(2)' "$tags" "${RELEASE_VERSION:-1.0.0}"; then
+  :
+else
+  case "$?" in
+    2) fail "version is already referenced by an npm tag" ;;
+    *) fail "tags lookup is invalid" ;;
+  esac
+fi
 
 npm publish --dry-run --access public "$RELEASE_TARBALL" >/dev/null || fail "exact tarball npm dry run failed"
 if [ "$authentication_mode" = 'token' ]; then
