@@ -62,6 +62,18 @@
   font-size: var(--type-label);
 }
 
+.install-status {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--warning);
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+  line-height: var(--leading-copy);
+}
+
+.pathway .install-status {
+  margin-top: 0;
+}
+
 .ledger-wrap {
   grid-column: 9 / -1;
   color: var(--ink);
@@ -158,6 +170,7 @@
 }
 
 .pathway {
+  min-width: 0;
   padding: var(--space-8) var(--space-6) var(--space-10) 0;
   border-bottom: var(--line) solid var(--rule);
 }
@@ -170,6 +183,15 @@
 .pathway h3 {
   margin: 0 0 var(--space-4);
   font-size: var(--type-h3);
+}
+
+.pathway .install-ledger {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0 0 var(--space-5);
+  white-space: pre;
 }
 
 .pathway p:not(.pathway-number) {
@@ -194,4 +216,20 @@
   color: var(--ink-muted);
   font-family: var(--font-mono);
   font-size: var(--type-small);
+}
+
+.site-footer a {
+  color: inherit;
+  transition: color var(--motion-micro);
+}
+
+.site-footer a:hover {
+  color: var(--accent-strong);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-4);
 }

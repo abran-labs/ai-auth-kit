@@ -1,14 +1,14 @@
 ---
 title: Agent skill
-description: Install version-matched AI Auth Kit implementation knowledge for Claude Code, OpenCode, and Codex.
+description: Prepare version-matched AI Auth Kit implementation knowledge for Claude Code, OpenCode, and Codex.
 ---
 
 AI Auth Kit has two deliberately separate surfaces:
 
-| Surface | Purpose | Installed where |
+| Surface | Purpose | Availability |
 | --- | --- | --- |
-| `@abran-labs/ai-auth-kit@1.0.0` | Runtime library used by your application. | Project dependency. |
-| Agent skill `1.0.0` | Local API, auth-flow, host-pattern, and security knowledge used by a coding agent. | User skill directory. |
+| `@abran-labs/ai-auth-kit@1.0.0` | Runtime library used by your application. | Pending npm publication. |
+| Agent skill `1.0.0` | Local API, auth-flow, host-pattern, and security knowledge used by a coding agent. | Pending release asset upload. |
 
 Coding agents can inspect runtime source, but reconstructing every provider policy, OAuth ordering,
 storage boundary, and failure rule slows implementation and risks omissions. The skill supplies
@@ -23,21 +23,27 @@ on external documentation.
 
 From the host project:
 
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+
 ```sh
 bun add @abran-labs/ai-auth-kit@1.0.0
 ```
 
 ## Install the skill
 
-The separately versioned skill is delivered by a reviewed curl installer. It verifies the immutable
-manifest, archive SHA-256, exact payload inventory, and every payload file before installing:
+The separately versioned skill will be delivered by a reviewed curl installer. It will verify the
+immutable manifest, archive SHA-256, exact payload inventory, and every payload file before
+installing.
+
+Pending: use this exact command after the agent-skill-v1.0.0 release asset is uploaded.
 
 ```sh
 curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh
 ```
 
-It installs one canonical payload at `~/.agents/skills/ai-auth-kit` and creates only the Claude
-compatibility symlink at `~/.claude/skills/ai-auth-kit`; it never creates an OpenCode duplicate.
+The installer will create one canonical payload at `~/.agents/skills/ai-auth-kit` and only the
+Claude compatibility symlink at `~/.claude/skills/ai-auth-kit`; it will not create an OpenCode
+duplicate.
 
 No `~/.config/opencode/skills/ai-auth-kit` copy is created. OpenCode already discovers the
 canonical Agent Skills path. One payload avoids duplicate-name collisions and version drift.
@@ -54,8 +60,11 @@ agent run the bundled checker from your host project:
 node "${HOME}/.agents/skills/ai-auth-kit/scripts/check-library-version.mjs" --project-dir "$PWD"
 ```
 
-The checker resolves the installed package and requires exactly `1.0.0`. It reports package path,
-detected version, expected version, and this exact remediation when missing or mismatched:
+The checker resolves the installed package and requires exactly `1.0.0`. After npm publication, it
+will report package path, detected version, expected version, and this exact remediation when
+missing or mismatched.
+
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
 
 ```sh
 bun add @abran-labs/ai-auth-kit@1.0.0

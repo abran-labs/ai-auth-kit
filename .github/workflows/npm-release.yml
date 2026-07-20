@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          evidence='.omo/evidence/task-3-library-only-npm-release'
+          evidence='.omo/evidence/packed-library-consumer-verification'
           mkdir -p .omo/npm-artifact
           tarball=$(find "$evidence" -maxdepth 1 -type f -name '*.tgz' -printf '%f\n')
           test "$(printf '%s\n' "$tarball" | wc -l)" -eq 1

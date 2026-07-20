@@ -12,7 +12,7 @@ the kit provides provider catalog, local authentication policy, project storage,
 - **Adding host-owned prompts?** Use `loginWithPrompts()` with a `PromptAdapter` from the
   [library API reference](../reference/api/).
 - **Helping a coding agent implement it?** Install the separate [agent skill](../guides/agent-skill/).
-- **Need a working setup now?** Complete the [60-second quickstart](./quickstart/).
+- **Need a working setup now?** Complete the [Quickstart](./quickstart/).
 
 :::note[Library distribution]
 AI Auth Kit is a pure library installed as exact npm version `1.0.0`. It ships no generic

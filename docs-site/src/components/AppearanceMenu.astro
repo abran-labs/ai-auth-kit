@@ -1,0 +1,164 @@
+---
+import "../styles/appearance-menu.css"
+
+const options = [
+  { label: "System", value: "auto" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+] as const
+---
+
+<div class="appearance" data-appearance>
+  <button
+    class="appearance-trigger"
+    type="button"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls="appearance-options"
+    aria-label="Appearance: System"
+  >
+    <span class="appearance-label">Appearance</span>
+    <span class="appearance-value" data-appearance-value>System</span>
+    <svg viewBox="0 0 12 8" aria-hidden="true">
+      <path d="m1 1.5 5 5 5-5" />
+    </svg>
+  </button>
+  <div class="appearance-options" id="appearance-options" role="menu" hidden>
+    {
+      options.map((option) => (
+        <button
+          class="appearance-option"
+          type="button"
+          role="menuitemradio"
+          aria-checked={option.value === "auto" ? "true" : "false"}
+          data-appearance-option={option.value}
+          tabindex="-1"
+        >
+          <span>{option.label}</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="m3 8 3 3 7-7" />
+          </svg>
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  const appearanceLabels = {
+    auto: "System",
+    light: "Light",
+    dark: "Dark",
+  } as const
+
+  type AppearancePreference = keyof typeof appearanceLabels
+  type MenuFocus = "first" | "last" | "selected"
+
+  function parsePreference(value: string | null): AppearancePreference {
+    if (value === "light" || value === "dark") return value
+    return "auto"
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>("[data-appearance]")) {
+    const trigger = root.querySelector<HTMLButtonElement>(".appearance-trigger")
+    const menu = root.querySelector<HTMLElement>(".appearance-options")
+    const value = root.querySelector<HTMLElement>("[data-appearance-value]")
+    const options = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-appearance-option]"))
+    if (trigger === null || menu === null || value === null || options.length === 0) continue
+    const triggerElement: HTMLButtonElement = trigger
+    const menuElement: HTMLElement = menu
+    const valueElement: HTMLElement = value
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    let activePreference = parsePreference(localStorage.getItem("starlight-theme"))
+
+    function applyPreference(preference: AppearancePreference, persist: boolean): void {
+      activePreference = preference
+      const resolved = preference === "auto" ? (media.matches ? "dark" : "light") : preference
+      document.documentElement.dataset["theme"] = resolved
+      document.documentElement.style.colorScheme = resolved
+      const persisted = preference === "auto" ? "" : preference
+      if (persist) localStorage.setItem("starlight-theme", persisted)
+      valueElement.textContent = appearanceLabels[preference]
+      triggerElement.setAttribute("aria-label", `Appearance: ${appearanceLabels[preference]}`)
+      for (const option of options) {
+        option.setAttribute(
+          "aria-checked",
+          option.dataset["appearanceOption"] === preference ? "true" : "false",
+        )
+      }
+    }
+
+    function closeMenu(restoreFocus: boolean): void {
+      menuElement.hidden = true
+      triggerElement.setAttribute("aria-expanded", "false")
+      if (restoreFocus) triggerElement.focus()
+    }
+
+    function openMenu(focus: MenuFocus): void {
+      menuElement.hidden = false
+      triggerElement.setAttribute("aria-expanded", "true")
+      const selected = options.find((option) => option.getAttribute("aria-checked") === "true")
+      const target = focus === "first" ? options[0] : focus === "last" ? options.at(-1) : selected
+      target?.focus()
+    }
+
+    function moveFocus(current: HTMLButtonElement, offset: number): void {
+      const index = options.indexOf(current)
+      if (index < 0) return
+      const nextIndex = (index + offset + options.length) % options.length
+      options[nextIndex]?.focus()
+    }
+
+    applyPreference(activePreference, true)
+
+    triggerElement.addEventListener("click", () => {
+      if (menuElement.hidden) openMenu("selected")
+      else closeMenu(false)
+    })
+    triggerElement.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
+        event.preventDefault()
+        openMenu("selected")
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault()
+        openMenu("last")
+      }
+    })
+
+    for (const option of options) {
+      option.addEventListener("click", () => {
+        applyPreference(parsePreference(option.dataset["appearanceOption"] ?? null), true)
+        closeMenu(true)
+      })
+      option.addEventListener("keydown", (event) => {
+        if (!(event.currentTarget instanceof HTMLButtonElement)) return
+        if (event.key === "ArrowDown") {
+          event.preventDefault()
+          moveFocus(event.currentTarget, 1)
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault()
+          moveFocus(event.currentTarget, -1)
+        } else if (event.key === "Home") {
+          event.preventDefault()
+          options[0]?.focus()
+        } else if (event.key === "End") {
+          event.preventDefault()
+          options.at(-1)?.focus()
+        } else if (event.key === "Escape") {
+          event.preventDefault()
+          closeMenu(true)
+        } else if (event.key === "Tab") {
+          closeMenu(false)
+        }
+      })
+    }
+
+    document.addEventListener("pointerdown", (event) => {
+      if (event.target instanceof Node && !root.contains(event.target)) closeMenu(false)
+    })
+    media.addEventListener("change", () => {
+      if (activePreference === "auto") applyPreference("auto", false)
+    })
+  }
+</script>
