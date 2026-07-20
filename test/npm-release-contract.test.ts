@@ -39,18 +39,22 @@ async function runPreflight(fixture: Readonly<Partial<Record<string, string>>>):
     }
     const sha256 = await Bun.$`node -e 'const { createHash } = require("node:crypto"); const { readFileSync } = require("node:fs"); process.stdout.write(createHash("sha256").update(readFileSync(process.argv[1])).digest("hex"));' ${tarball}`.text();
     const sri = await Bun.$`node -e 'const { createHash } = require("node:crypto"); const { readFileSync } = require("node:fs"); process.stdout.write("sha512-" + createHash("sha512").update(readFileSync(process.argv[1])).digest("base64"));' ${tarball}`.text();
-    await writeFile(npm, `#!/bin/sh\ncase "$*" in\n  "ping --registry=${registry}") if [ "${fixture.ping ?? "pong"}" = "wrong registry" ]; then exit 91; fi; printf '%s\\n' "${fixture.ping ?? "pong"}" ;;\n  whoami) printf '%s\\n' "${fixture.whoami ?? "release-bot"}" ;;\n  "access ls-packages @abran-labs --json") printf '%s\\n' '${fixture.packages ?? '{"@abran-labs/ai-auth-kit":"write"}'}' ;;\n  "org ls abran-labs --json") printf '%s\\n' '${fixture.organization ?? '{"release-bot":"developer"}'}' ;;\n  "view @abran-labs/ai-auth-kit@1.0.0 version --registry=${registry} --json") printf '%s\\n' '${fixture.version ?? "null"}' ;;\n  "view @abran-labs/ai-auth-kit dist-tags --registry=${registry} --json") printf '%s\\n' '${fixture.tags ?? "{}"}' ;;\n  "publish --dry-run --access public $TARBALL") printf '%s\\n' "dry run accepted" ;;\n  *) printf 'unexpected npm invocation: %s\\n' "$*" >&2; exit 90 ;;\nesac\n`, { mode: 0o755 });
-    const authentication = fixture.auth === "missing"
-      ? {}
-      : {
+    await writeFile(npm, `#!/bin/sh\ncase "$*" in\n  "ping --registry=${registry}") if [ "${fixture.ping ?? "pong"}" = "wrong registry" ]; then exit 91; fi; printf '%s\\n' "${fixture.ping ?? "pong"}" ;;\n  whoami) if [ "${fixture.whoami ?? "release-bot"}" = "fail" ]; then printf '%s\\n' "OIDC has no token-backed principal" >&2; exit 92; fi; printf '%s\\n' "${fixture.whoami ?? "release-bot"}" ;;\n  "access ls-packages @abran-labs --json") printf '%s\\n' '${fixture.packages ?? '{"@abran-labs/ai-auth-kit":"write"}'}' ;;\n  "org ls abran-labs --json") printf '%s\\n' '${fixture.organization ?? '{"release-bot":"developer"}'}' ;;\n  "view @abran-labs/ai-auth-kit@1.0.0 version --registry=${registry} --json") printf '%s\\n' '${fixture.version ?? "null"}' ;;\n  "view @abran-labs/ai-auth-kit dist-tags --registry=${registry} --json") printf '%s\\n' '${fixture.tags ?? "{}"}' ;;\n  "publish --dry-run --access public $TARBALL") printf '%s\\n' "dry run accepted" ;;\n  *) printf 'unexpected npm invocation: %s\\n' "$*" >&2; exit 90 ;;\nesac\n`, { mode: 0o755 });
+    const authentication = fixture.auth === "oidc" || fixture.auth === "dual" || fixture.auth === undefined
+      ? {
         ACTIONS_ID_TOKEN_REQUEST_TOKEN: "fixture-token",
         ACTIONS_ID_TOKEN_REQUEST_URL: "https://oidc.invalid/request",
-        NPM_CONFIG_PROVENANCE: "true",
-      };
+        NPM_CONFIG_PROVENANCE: fixture.provenance === "missing" ? "" : "true",
+      }
+      : {};
     const environment = {
       ...process.env,
       ...authentication,
-      NODE_AUTH_TOKEN: fixture.auth === "missing" ? "" : (process.env.NODE_AUTH_TOKEN ?? ""),
+      NODE_AUTH_TOKEN: fixture.auth === "token" || fixture.auth === "dual" ? "fixture-token" : "",
+      GITHUB_REPOSITORY: fixture.repository ?? "abran-labs/ai-auth-kit",
+      GITHUB_WORKFLOW_REF: fixture.workflow ?? "abran-labs/ai-auth-kit/.github/workflows/npm-release.yml@refs/heads/master",
+      GITHUB_JOB: fixture.job ?? "publish",
+      RELEASE_GITHUB_ENVIRONMENT: fixture.environment ?? "npm-production",
       NPM_CONFIG_REGISTRY: fixture.registry ?? registry,
       LC_ALL: fixture.locale ?? process.env.LC_ALL ?? "",
       PATH: `${directory}:${process.env.PATH ?? ""}`,
@@ -88,10 +92,47 @@ test("Given the npm release workflow, when its publication contract is inspected
   expect(workflow).toContain("oven-sh/setup-bun@");
   expect(workflow).toContain("INPUT_SOURCE_TAG");
   expect(workflow).toContain("RELEASE_TARBALL_FILENAME");
+  expect(workflow).toContain("RELEASE_GITHUB_ENVIRONMENT: npm-production");
   expect(workflow).toContain("npm publish \"$RELEASE_TARBALL\"");
   expect(workflow).not.toMatch(/npm publish\s+(?:\.|\$\{?GITHUB_WORKSPACE)/);
   expect(workflow).not.toContain("bun pm pack");
   expect(workflow).not.toContain("softprops/action-gh-release");
+});
+
+test("Given GitHub OIDC trusted publishing, when npm whoami has no token-backed principal, then preflight accepts the exact verified tarball", async () => {
+  const oidcWithoutTokenPrincipal = await runPreflight({ whoami: "fail" });
+  expect(oidcWithoutTokenPrincipal.exitCode, oidcWithoutTokenPrincipal.output).toBe(0);
+  expect(oidcWithoutTokenPrincipal.output).toContain("GitHub OIDC context");
+});
+
+test("Given GitHub OIDC trusted publishing, when a token is also present, then preflight rejects ambiguous authentication", async () => {
+  const result = await runPreflight({ auth: "dual" });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
+test("Given GitHub OIDC trusted publishing, when its GitHub repository context is wrong, then preflight rejects it", async () => {
+  const result = await runPreflight({ repository: "other-owner/other-repo" });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
+test("Given GitHub OIDC trusted publishing, when its workflow context is wrong, then preflight rejects it", async () => {
+  const result = await runPreflight({ workflow: "abran-labs/ai-auth-kit/.github/workflows/other.yml@refs/heads/master" });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
+test("Given GitHub OIDC trusted publishing, when its job context is wrong, then preflight rejects it", async () => {
+  const result = await runPreflight({ job: "package" });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
+test("Given GitHub OIDC trusted publishing, when its environment context is wrong, then preflight rejects it", async () => {
+  const result = await runPreflight({ environment: "staging" });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
+test("Given GitHub OIDC trusted publishing, when provenance is missing, then preflight rejects it", async () => {
+  const result = await runPreflight({ provenance: "missing" });
+  expect(result.exitCode, result.output).not.toBe(0);
 });
 
 test("Given release preflight fixtures, when registry, principal, authority, availability, auth path, and artifact integrity are invalid, then every ambiguous state fails closed", async () => {
@@ -111,9 +152,9 @@ test("Given release preflight fixtures, when registry, principal, authority, ava
 
   for (const fixture of [
     { registry: "https://registry.invalid/" },
-    { whoami: "" },
-    { packages: "{}" },
-    { organization: "{}" },
+    { whoami: "", auth: "token" },
+    { packages: "{}", auth: "token" },
+    { organization: "{}", auth: "token" },
     { version: '"1.0.0"' },
     { tags: '{"latest":"1.0.0"}' },
     { sha256: "0".repeat(64) },
