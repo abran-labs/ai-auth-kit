@@ -115,6 +115,7 @@ jobs:
           RELEASE_TARBALL_FILENAME: ${{ needs.package.outputs.tarball_filename }}
           RELEASE_TARBALL_INVENTORY: .omo/npm-artifact/pack.inventory.txt
           RELEASE_VERSION: 1.0.0
+          RELEASE_GITHUB_ENVIRONMENT: npm-production
         shell: bash
         run: |
           set -euo pipefail

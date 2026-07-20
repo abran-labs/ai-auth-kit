@@ -20,7 +20,9 @@ or replace a GitHub release, push a tag, or deploy the docs site without separat
 - [ ] The package job uploads exactly one verified tarball under its original filename with
   `source-tag.sha`, SHA-256, SRI, and inventory.
 - [ ] The protected `npm-production` job downloads that artifact and checks source SHA, SHA-256, SRI,
-  inventory, official registry, principal, scope/org authority, absent version/tag, and auth path.
+  inventory, official registry, absent version/tag, provenance, and the exact-tarball dry run. Token auth
+  additionally checks principal, package scope authority, and organization membership; GitHub OIDC checks
+  the repository, workflow, job, and declared environment context without claiming npm configuration is local.
 - [ ] Publishing requires workflow input `I_HAVE_EXPLICIT_FINAL_NPM_APPROVAL` after fresh user approval.
 - [ ] Publish command is `npm publish "$RELEASE_TARBALL" --access public --provenance`; it never packs
   a directory or creates a GitHub release asset.
@@ -44,3 +46,6 @@ or replace a GitHub release, push a tag, or deploy the docs site without separat
   GitHub before a remote release or deployment. This repository cannot prove those remote settings.
 - [ ] If npm credentials or trusted-publisher configuration are unavailable, preserve the fail-closed
   preflight result and complete npm setup; never claim authority or bypass the gate.
+- [ ] Configure npm Trusted Publisher for GitHub Actions exactly: owner `abran-labs`, repository
+  `ai-auth-kit`, workflow filename `npm-release.yml`, environment `npm-production`. GitHub OIDC context
+  checks are only local signals; npm validates this tuple during `npm publish --provenance`.

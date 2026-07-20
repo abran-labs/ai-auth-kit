@@ -43,22 +43,33 @@ if [ -n "${RELEASE_TARBALL_INVENTORY:-}" ]; then
 fi
 
 if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+  [ -z "${NODE_AUTH_TOKEN:-}" ] || fail "ambiguous GitHub OIDC and npm token authentication"
   [ "${NPM_CONFIG_PROVENANCE:-}" = 'true' ] || fail "OIDC publish requires npm provenance"
+  [ "${GITHUB_REPOSITORY:-}" = 'abran-labs/ai-auth-kit' ] || fail "GitHub OIDC repository context is invalid"
+  case "${GITHUB_WORKFLOW_REF:-}" in
+    'abran-labs/ai-auth-kit/.github/workflows/npm-release.yml@'*) ;;
+    *) fail "GitHub OIDC workflow context is invalid" ;;
+  esac
+  [ "${GITHUB_JOB:-}" = 'publish' ] || fail "GitHub OIDC job context is invalid"
+  [ "${RELEASE_GITHUB_ENVIRONMENT:-}" = 'npm-production' ] || fail "GitHub OIDC environment context is invalid"
+  authentication_mode='oidc'
 elif [ -n "${NODE_AUTH_TOKEN:-}" ]; then
-  : "token publish path selected"
+  authentication_mode='token'
 else
   fail "no GitHub OIDC or npm token authentication path configured"
 fi
 
 npm ping --registry=https://registry.npmjs.org/ >/dev/null || fail "official npm registry ping failed"
-principal=$(npm whoami) || fail "npm principal lookup failed"
-require_value "$principal" "npm principal"
+if [ "$authentication_mode" = 'token' ]; then
+  principal=$(npm whoami) || fail "npm principal lookup failed"
+  require_value "$principal" "npm principal"
 
-packages=$(npm access ls-packages @abran-labs --json) || fail "scope authority lookup failed"
-node -e 'const value = JSON.parse(process.argv[1]); if (!["read-write", "write", "admin"].includes(value[process.argv[2]])) process.exit(1)' "$packages" "$package" || fail "principal lacks package authority"
+  packages=$(npm access ls-packages @abran-labs --json) || fail "scope authority lookup failed"
+  node -e 'const value = JSON.parse(process.argv[1]); if (!["read-write", "write", "admin"].includes(value[process.argv[2]])) process.exit(1)' "$packages" "$package" || fail "principal lacks package authority"
 
-members=$(npm org ls abran-labs --json) || fail "organization authority lookup failed"
-node -e 'const value = JSON.parse(process.argv[1]); if (!Object.hasOwn(value, process.argv[2])) process.exit(1)' "$members" "$principal" || fail "principal is not an organization member"
+  members=$(npm org ls abran-labs --json) || fail "organization authority lookup failed"
+  node -e 'const value = JSON.parse(process.argv[1]); if (!Object.hasOwn(value, process.argv[2])) process.exit(1)' "$members" "$principal" || fail "principal is not an organization member"
+fi
 
 if version=$(npm view "$package@${RELEASE_VERSION:-1.0.0}" version --registry=https://registry.npmjs.org/ --json 2>/dev/null); then
   [ -z "$version" ] || [ "$version" = 'null' ] || fail "package version already exists"
@@ -68,4 +79,8 @@ tags=$(npm view "$package" dist-tags --registry=https://registry.npmjs.org/ --js
 node -e 'const tags = JSON.parse(process.argv[1]); if (Object.values(tags).includes(process.argv[2])) process.exit(1)' "$tags" "${RELEASE_VERSION:-1.0.0}" || fail "version is already referenced by an npm tag"
 
 npm publish --dry-run --access public "$RELEASE_TARBALL" >/dev/null || fail "exact tarball npm dry run failed"
-printf '%s\n' "npm release preflight passed for $principal"
+if [ "$authentication_mode" = 'token' ]; then
+  printf '%s\n' "npm release preflight passed for $principal"
+else
+  printf '%s\n' "npm release preflight passed for GitHub OIDC context; npm publish validates trusted publisher configuration"
+fi
