@@ -40,6 +40,15 @@ async function runPreflight(fixture: Readonly<Partial<Record<string, string>>>):
     const sha256 = await Bun.$`node -e 'const { createHash } = require("node:crypto"); const { readFileSync } = require("node:fs"); process.stdout.write(createHash("sha256").update(readFileSync(process.argv[1])).digest("hex"));' ${tarball}`.text();
     const sri = await Bun.$`node -e 'const { createHash } = require("node:crypto"); const { readFileSync } = require("node:fs"); process.stdout.write("sha512-" + createHash("sha512").update(readFileSync(process.argv[1])).digest("base64"));' ${tarball}`.text();
     await writeFile(npm, `#!/bin/sh\ncase "$*" in\n  "ping --registry=${registry}") if [ "${fixture.ping ?? "pong"}" = "wrong registry" ]; then exit 91; fi; printf '%s\\n' "${fixture.ping ?? "pong"}" ;;\n  whoami) if [ "${fixture.whoami ?? "release-bot"}" = "fail" ]; then printf '%s\\n' "OIDC has no token-backed principal" >&2; exit 92; fi; printf '%s\\n' "${fixture.whoami ?? "release-bot"}" ;;\n  "access ls-packages @abran-labs --json") printf '%s\\n' '${fixture.packages ?? '{"@abran-labs/ai-auth-kit":"write"}'}' ;;\n  "org ls abran-labs --json") printf '%s\\n' '${fixture.organization ?? '{"release-bot":"developer"}'}' ;;\n  "view @abran-labs/ai-auth-kit@1.0.0 version --registry=${registry} --json") printf '%s\\n' '${fixture.version ?? "null"}' ;;\n  "view @abran-labs/ai-auth-kit dist-tags --registry=${registry} --json") printf '%s\\n' '${fixture.tags ?? "{}"}' ;;\n  "publish --dry-run --access public $TARBALL") printf '%s\\n' "dry run accepted" ;;\n  *) printf 'unexpected npm invocation: %s\\n' "$*" >&2; exit 90 ;;\nesac\n`, { mode: 0o755 });
+    const tagLookupOutput = fixture.tags ?? "{}";
+    const tagLookupExit = fixture.tagLookupExit ?? "0";
+    const versionsLookupOutput = fixture.versions ?? "[]";
+    const versionsLookupExit = fixture.versionsLookupExit ?? "0";
+    {
+      const script = await readFile(npm, "utf8");
+      const lookupHandlers = `  "view @abran-labs/ai-auth-kit versions --registry=${registry} --json") printf '%s\\n' '${versionsLookupOutput}'${versionsLookupExit === "0" ? "" : ` >&2; exit ${versionsLookupExit}`} ;;\n  "view @abran-labs/ai-auth-kit dist-tags --registry=${registry} --json") printf '%s\\n' '${tagLookupOutput}'${tagLookupExit === "0" ? "" : ` >&2; exit ${tagLookupExit}`} ;;`;
+      await writeFile(npm, script.replace('case "$*" in', `case "$*" in\n${lookupHandlers}`));
+    }
     const authentication = fixture.auth === "oidc" || fixture.auth === "dual" || fixture.auth === undefined
       ? {
         ACTIONS_ID_TOKEN_REQUEST_TOKEN: "fixture-token",
@@ -105,6 +114,57 @@ test("Given GitHub OIDC trusted publishing, when npm whoami has no token-backed 
   expect(oidcWithoutTokenPrincipal.output).toContain("GitHub OIDC context");
 });
 
+test("Given an unpublished package, when npm's dist-tag lookup returns one exact E404 line, then preflight treats tags and versions as empty", async () => {
+  const result = await runPreflight({ tags: "npm error code E404", tagLookupExit: "94", versions: "{" });
+  expect(result.exitCode, result.output).toBe(0);
+  expect(result.output).toContain("GitHub OIDC context");
+});
+
+test("Given ambiguous npm lookup output, when E404 is suffixed, mixed, spoofed, or replaced, then preflight fails closed", async () => {
+  for (const tags of [
+    "npm error code E404_SUFFIX",
+    "npm error code E404\nnpm error code E500",
+    "npm error detail: npm error code E404",
+    "npm error code E500",
+  ] as const) {
+    const result = await runPreflight({ tags, tagLookupExit: "94" });
+    expect(result.exitCode, result.output).not.toBe(0);
+  }
+});
+
+test("Given a successful dist-tag lookup, when its JSON is malformed, then preflight fails closed", async () => {
+  const result = await runPreflight({ tags: "{" });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
+test("Given successful lookup JSON with wrong schemas, when tags or versions contain non-string shapes, then preflight fails closed", async () => {
+  for (const fixture of [
+    { tags: "[]" },
+    { tags: "42" },
+    { tags: '{"latest":42}' },
+    { versions: "[42]" },
+  ] as const) {
+    const result = await runPreflight(fixture);
+    expect(result.exitCode, result.output).not.toBe(0);
+  }
+});
+
+test("Given an existing package, when version lookup errors or JSON is malformed, then preflight fails closed", async () => {
+  for (const fixture of [
+    { versions: "npm error code E404", versionsLookupExit: "94" },
+    { versions: "npm error code E500", versionsLookupExit: "95" },
+    { versions: "{" },
+  ] as const) {
+    const result = await runPreflight(fixture);
+    expect(result.exitCode, result.output).not.toBe(0);
+  }
+});
+
+test("Given an existing package, when the target version occurs in its versions array, then preflight rejects publication", async () => {
+  const result = await runPreflight({ versions: '["0.9.0","1.0.0"]' });
+  expect(result.exitCode, result.output).not.toBe(0);
+});
+
 test("Given GitHub OIDC trusted publishing, when a token is also present, then preflight rejects ambiguous authentication", async () => {
   const result = await runPreflight({ auth: "dual" });
   expect(result.exitCode, result.output).not.toBe(0);
@@ -155,7 +215,7 @@ test("Given release preflight fixtures, when registry, principal, authority, ava
     { whoami: "", auth: "token" },
     { packages: "{}", auth: "token" },
     { organization: "{}", auth: "token" },
-    { version: '"1.0.0"' },
+    { versions: '["1.0.0"]' },
     { tags: '{"latest":"1.0.0"}' },
     { sha256: "0".repeat(64) },
     { sri: "sha512-invalid" },
