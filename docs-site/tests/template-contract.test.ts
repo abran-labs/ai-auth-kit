@@ -7,12 +7,15 @@ const requiredFiles = [
   "DESIGN.md",
   "astro.config.ts",
   "src/pages/index.astro",
+  "src/components/AppearanceMenu.astro",
   "src/pages/robots.txt.ts",
   "src/styles/global.css",
+  "src/styles/appearance-menu.css",
   "src/styles/landing-components.css",
   "src/styles/landing-responsive.css",
   "tests/capture-state-qa.ts",
   "tests/interaction-qa.ts",
+  "tests/reduced-motion-qa.ts",
   "tests/theme-keyboard-qa.ts",
   "src/content/docs/start/index.md",
   "src/content/docs/start/quickstart.md",
@@ -27,7 +30,7 @@ const forbiddenTerms = [
   "CodeGraph",
   String.fromCodePoint(102, 105, 101, 108, 100, 110, 111, 116, 101, 115),
   "lorem ipsum",
-  "TODO",
+  String.fromCodePoint(84, 79, 68, 79),
   "tailwind",
   "glassmorphism",
 ] as const
@@ -73,15 +76,51 @@ describe("template contract", () => {
 
   test("keeps landing accessibility and theme continuity in source", async () => {
     // Given: the custom landing source outside Starlight's page shell
-    const landing = await Bun.file(resolve(root, "src/pages/index.astro")).text()
+    const [landing, appearance] = await Promise.all([
+      Bun.file(resolve(root, "src/pages/index.astro")).text(),
+      Bun.file(resolve(root, "src/components/AppearanceMenu.astro")).text(),
+    ])
 
     // When: its accessibility and theme contracts are inspected
     // Then: it shares Starlight state and exposes keyboard navigation controls
     expect(landing).toContain('localStorage.getItem("starlight-theme")')
     expect(landing).toContain('class="skip-link"')
-    expect(landing).toContain('aria-label="Color theme"')
+    expect(appearance).toContain('aria-label="Appearance: System"')
     expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
     expect(landing).not.toContain("--exact \\")
+  })
+
+  test("owns the landing Appearance menu and complete entry-point promise", async () => {
+    // Given: the landing and its project-owned appearance control
+    const landing = await Bun.file(resolve(root, "src/pages/index.astro")).text()
+    const appearanceFile = Bun.file(resolve(root, "src/components/AppearanceMenu.astro"))
+    const appearance = (await appearanceFile.exists()) ? await appearanceFile.text() : ""
+    const appearanceStyles = await Bun.file(resolve(root, "src/styles/appearance-menu.css")).text()
+
+    // When: the public landing contract is inspected
+    // Then: the page exposes both install routes, Quickstart, linked credit, and no native select
+    expect(landing).toContain("Provider authentication and model selection for host tools")
+    expect(landing).toContain("EXACT_README_PROMISE")
+    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(landing).toContain("install-agent-skill.sh | sh")
+    expect(landing).toContain(">Quickstart</a>")
+    expect(landing).not.toContain("60-second quickstart")
+    expect(landing).toContain('href="https://starlight.astro.build/"')
+    expect(landing).toContain("<AppearanceMenu />")
+    expect(`${landing}\n${appearance}`).not.toContain("<select")
+
+    // Then: the owned menu carries the documented semantics and selected surface token
+    expect(appearance).toContain('aria-haspopup="menu"')
+    expect(appearance).toContain('role="menuitemradio"')
+    expect(appearance).toContain('localStorage.setItem("starlight-theme", persisted)')
+    expect(appearance).toContain('const persisted = preference === "auto" ? "" : preference')
+    expect(appearance).toContain("ArrowDown")
+    expect(appearance).toContain("ArrowUp")
+    expect(appearance).toContain("Home")
+    expect(appearance).toContain("End")
+    expect(appearance).toContain("Escape")
+    expect(appearanceStyles).toContain("var(--paper-muted)")
+    expect(`${appearance}\n${appearanceStyles}`).not.toContain("--paper-soft")
   })
 
   test("gates deployment on browser QA", async () => {
@@ -121,7 +160,7 @@ describe("template contract", () => {
     ])
 
     // When: their commands are inspected
-    // Then: each surface uses the exact public npm release
+    // Then: each surface uses the exact version-pinned npm command
     expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
     expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
     expect(`${landing}\n${quickstart}`).not.toContain("github:abran-labs/ai-auth-kit#")

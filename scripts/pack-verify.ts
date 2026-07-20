@@ -7,7 +7,7 @@ import { validateGeneratedCatalog, type CatalogVerification } from "./catalog-pr
 import { verifyDist } from "./verify-dist.js";
 
 const PACKAGE_NAME = "@abran-labs/ai-auth-kit";
-const EVIDENCE_DIRECTORY = ".omo/evidence/task-3-library-only-npm-release";
+const EVIDENCE_DIRECTORY = ".omo/evidence/packed-library-consumer-verification";
 const GENERATED_CATALOG = ["generated/catalog-provenance.json", "generated/catalog-snapshot.json"] as const;
 const ROOT_FILES = ["README.md", "LICENSE", "package.json"] as const;
 const SOURCE_FILES = [
@@ -181,10 +181,10 @@ export async function verifyPack(root: string): Promise<PackVerification> {
     writeFile(join(evidence, "catalog-verification.json"), `${JSON.stringify({ source: catalog, tarball: packedCatalog }, null, 2)}\n`),
     writeFile(join(evidence, "package-payload.stdout.txt"), dryRun),
     writeFile(join(evidence, "commands-and-results.md"), [
-      "# Todo 3 local npm pack evidence",
+      "# Local npm pack verification",
       "",
       "- `bun pm pack --dry-run --ignore-scripts`: passed",
-      "- `bun pm pack --ignore-scripts --destination .omo/evidence/task-3-library-only-npm-release`: passed",
+      "- `bun pm pack --ignore-scripts --destination .omo/evidence/packed-library-consumer-verification`: passed",
       "- clean Bun source-condition consumer: passed",
       "- clean Node ESM built-condition consumer: passed",
       "- clean TypeScript declarations consumer: passed",

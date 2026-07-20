@@ -1,6 +1,6 @@
 ---
-title: 60-second quickstart
-description: Install exact AI Auth Kit 1.0.0 and verify root library access.
+title: Quickstart
+description: Prepare the exact AI Auth Kit 1.0.0 command and verify root library access after publication.
 ---
 
 ## Prerequisites
@@ -12,12 +12,14 @@ description: Install exact AI Auth Kit 1.0.0 and verify root library access.
 
 ## Step 1 — Add exact version 1.0.0
 
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+
 ```sh
 bun add @abran-labs/ai-auth-kit@1.0.0
 ```
 
-Commit the resulting `bun.lock`. Use `bun install --frozen-lockfile` in CI so direct and transitive
-versions remain reproducible.
+After publication, commit the resulting `bun.lock`. Use `bun install --frozen-lockfile` in CI so
+direct and transitive versions remain reproducible.
 
 ## Step 2 — Use the root library
 
@@ -38,13 +40,12 @@ provider-client calls.
 ## Step 3 — Verify storage
 
 `createProjectAuthKit("my-tool")` stores state below `./.ai-auth-kit/my-tool/`. See [Storage and
-privacy](../guides/storage-privacy/) before deciding whether project or global storage fits your
+privacy](../../guides/storage-privacy/) before deciding whether project or global storage fits your
 application.
 
-## Agent implementation knowledge
+## Next steps
 
-The separate [AI Auth Kit agent skill](../guides/agent-skill/) gives Claude Code, OpenCode, or Codex
-version-matched API, auth-flow, host-pattern, and security knowledge. The package runs in your app;
-the skill helps the agent implement it correctly. Neither installs the other. For agent work,
-bundled skill references are primary knowledge.
-Docs are fallback only when those local references do not answer a question.
+- Build a host workflow with the [library guide](../../guides/library/).
+- Choose a supported method in [Providers and authentication](../../guides/providers-auth/).
+- Give a coding agent version-matched implementation knowledge with the separate [agent
+  skill](../../guides/agent-skill/).

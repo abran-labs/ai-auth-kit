@@ -119,6 +119,7 @@ export async function validateSource(root: string): Promise<readonly string[]> {
 
   const design = await readExisting(root, "DESIGN.md")
   for (const section of designSections) requireText(violations, design, "DESIGN.md", section)
+  if (design !== undefined) violations.push(...documentationViolations(design, "DESIGN.md"))
 
   const config = await readExisting(root, "astro.config.ts")
   requireText(violations, config, "astro.config.ts", "@astrojs/starlight")

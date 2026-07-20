@@ -27,7 +27,33 @@ describe("contract validator", () => {
       ),
     ).toEqual([
       "src/content/docs/start/index.md: forbidden generic CLI claim",
-      `src/content/docs/start/index.md: broken internal link ${deletedGuidePath}/`,
+      "src/content/docs/start/index.md: broken rendered route guides/cli/",
+    ])
+  })
+
+  test("rejects source-valid links whose rendered browser routes do not exist", () => {
+    // Given: relative Markdown links that point at source files but render below the current route
+    const oldQuickstartLinks = [
+      "[Storage](../guides/storage-privacy/)",
+      "[Library](../guides/library/)",
+      "[Providers](../guides/providers-auth/)",
+      "[Agent skill](../guides/agent-skill/)",
+    ].join("\n")
+    const oldCliProxyLink = "[CLIProxyAPI](./cliproxy/)"
+
+    // When: documentation policy resolves links as a browser would
+    const violations = [
+      ...documentationViolations(oldQuickstartLinks, "src/content/docs/start/quickstart.md"),
+      ...documentationViolations(oldCliProxyLink, "src/content/docs/guides/providers-auth.md"),
+    ]
+
+    // Then: all five rendered 404 routes are rejected
+    expect(violations).toEqual([
+      "src/content/docs/start/quickstart.md: broken rendered route start/guides/storage-privacy/",
+      "src/content/docs/start/quickstart.md: broken rendered route start/guides/library/",
+      "src/content/docs/start/quickstart.md: broken rendered route start/guides/providers-auth/",
+      "src/content/docs/start/quickstart.md: broken rendered route start/guides/agent-skill/",
+      "src/content/docs/guides/providers-auth.md: broken rendered route guides/providers-auth/cliproxy/",
     ])
   })
 
@@ -51,6 +77,30 @@ describe("contract validator", () => {
 
   test("enumerates every maintained route for browser capture", () => {
     expect(maintainedDocumentationRoutes).toHaveLength(11)
+  })
+
+  test("keeps docs activation concise with exact commands and canonical adapter provenance", async () => {
+    // Given: the maintained docs navigation and activation pages
+    const [config, start, quickstart, agentGuide, providers, cliProxy] = await Promise.all([
+      Bun.file(resolve(root, "astro.config.ts")).text(),
+      Bun.file(resolve(root, "src/content/docs/start/index.md")).text(),
+      Bun.file(resolve(root, "src/content/docs/start/quickstart.md")).text(),
+      Bun.file(resolve(root, "src/content/docs/guides/agent-skill.md")).text(),
+      Bun.file(resolve(root, "src/content/docs/guides/providers-auth.md")).text(),
+      Bun.file(resolve(root, "src/content/docs/guides/cliproxy.md")).text(),
+    ])
+
+    // When: visible labels, commands, and adapter links are inspected together
+    const scopedSource = [config, start, quickstart, agentGuide, providers, cliProxy].join("\n")
+
+    // Then: concise labels and exact activation/provenance contracts remain
+    expect(scopedSource).not.toMatch(/60-second quickstart|Start in 60 seconds/i)
+    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(agentGuide).toContain(
+      "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh",
+    )
+    expect(cliProxy).toContain("[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)")
+    expect(providers).toContain("only for Anthropic or Google account auth")
   })
 
   test("accepts the maintained source contract", async () => {

@@ -1,0 +1,112 @@
+.appearance {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+}
+
+.appearance-trigger,
+.appearance-option {
+  min-height: var(--target);
+  border: var(--line) solid var(--rule);
+  border-radius: var(--radius-control);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
+.appearance-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-micro),
+    border-color var(--motion-micro),
+    transform var(--motion-micro);
+}
+
+.appearance-trigger:hover,
+.appearance-trigger[aria-expanded="true"],
+.appearance-option:hover,
+.appearance-option:focus-visible,
+.appearance-option[aria-checked="true"] {
+  background: var(--paper-muted);
+  border-color: var(--accent-strong);
+}
+
+.appearance-trigger:active,
+.appearance-option:active {
+  transform: translateY(var(--line));
+}
+
+.appearance-label {
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+
+.appearance-value {
+  min-width: var(--appearance-value-min);
+  text-align: start;
+}
+
+.appearance-trigger svg {
+  width: var(--space-3);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-stroke);
+}
+
+.appearance-options {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  min-width: var(--appearance-menu-min);
+  padding: var(--space-1);
+  border: var(--line) solid var(--rule);
+  border-radius: var(--radius-surface);
+  background: var(--paper-raised);
+}
+
+.appearance-options[hidden] {
+  display: none;
+}
+
+.appearance-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: var(--space-3);
+  border-color: transparent;
+  cursor: pointer;
+  text-align: start;
+  transition:
+    background-color var(--motion-micro),
+    border-color var(--motion-micro),
+    transform var(--motion-micro);
+}
+
+.appearance-option svg {
+  width: var(--space-4);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-stroke);
+  opacity: 0;
+}
+
+.appearance-option[aria-checked="true"] svg {
+  opacity: 1;
+}
+
+@media (max-width: 40rem) {
+  .appearance-label {
+    position: absolute;
+    width: var(--line);
+    height: var(--line);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
