@@ -85,12 +85,27 @@ not reusable visual tokens. Reusable grid counts, target sizes, and artwork boun
 - Mono type, raised paper, sharp corners, horizontal overflow contained within the block.
 - Copy controls are omitted unless a real announced success/failure interaction is added.
 
+### Appearance menu
+- A project-owned Appearance button opens a menu and exposes System, Light, and Dark without
+  replacing or forking Starlight's theme behavior.
+- System maps to internal `auto`, persists the empty string `""` under `starlight-theme`, and
+  resolves `data-theme` from the current color-scheme media query before paint. Light persists
+  exactly `light`; Dark persists exactly `dark`. Missing or invalid values normalize to System.
+- The button exposes expanded state and the active option. Keyboard support includes Tab, Enter,
+  Space, ArrowUp, ArrowDown, Home, End, and Escape; Escape restores focus to the button.
+- Pointer selection, outside dismissal, visible focus, reduced motion, and mobile behavior remain
+  equivalent. Every option keeps the 44px minimum target and communicates its selected state
+  without relying on color alone.
+- Menu width, active-value measure, and icon stroke use `--appearance-menu-min`,
+  `--appearance-value-min`, and `--icon-stroke`; selected and hover surfaces use the documented
+  `--paper-muted` quiet-surface token.
+
 ### Starlight shell
-- Preserve upstream header, sidebar, content, TOC, search, theme picker, and Expressive Code.
+- Preserve upstream header, sidebar, content, TOC, search, theme behavior, and Expressive Code.
 - Preserve mobile and desktop behavior, light and dark variants, keyboard order, and all
   accessibility states. Narrow token overrides only; no shell fork.
 - The custom landing shares the `starlight-theme` preference, resolves it before paint, and
-  provides equivalent theme selection and skip-to-content controls.
+  provides equivalent Appearance selection and skip-to-content controls.
 
 ## 6. Motion & Interaction
 

@@ -51,7 +51,7 @@ export async function interactiveFocusFindings(
       [".skip-link", "skip link"],
       [".wordmark", "wordmark"],
       [".mast-link", "mast link"],
-      [".theme-select", "theme selector"],
+      [".appearance-trigger", "Appearance menu"],
       [".action", "hero action"],
       [".install-ledger", "install ledger"],
       [".pathway a", "pathway link"],
@@ -206,11 +206,12 @@ export async function themeNavigationFindings(
     await page.locator(".site-title").click()
     await page.waitForLoadState("networkidle")
     const landingTheme = await page.locator("html").getAttribute("data-theme")
-    const landingControl = await page.locator("#landing-theme").inputValue()
-    if (landingTheme !== "dark" || landingControl !== "dark") {
+    const landingControl = await page.locator(".appearance-trigger").getAttribute("aria-label")
+    if (landingTheme !== "dark" || landingControl !== "Appearance: Dark") {
       findings.push(`docs-to-landing dark theme failed at ${options.width}px`)
     }
-    await page.locator("#landing-theme").selectOption("light")
+    await page.locator(".appearance-trigger").click()
+    await page.getByRole("menuitemradio", { name: "Light" }).click()
     await page.locator('.mast-link[href$="start/"]').click()
     await page.waitForLoadState("networkidle")
     if ((await page.locator("html").getAttribute("data-theme")) !== "light") {
@@ -219,7 +220,8 @@ export async function themeNavigationFindings(
     await page.locator(".site-title").click()
     await page.waitForLoadState("networkidle")
     await page.emulateMedia({ colorScheme: "dark" })
-    await page.locator("#landing-theme").selectOption("auto")
+    await page.locator(".appearance-trigger").click()
+    await page.getByRole("menuitemradio", { name: "System" }).click()
     await page.waitForFunction(() => document.documentElement.dataset["theme"] === "dark")
     await page.emulateMedia({ colorScheme: "light" })
     await page.waitForFunction(() => document.documentElement.dataset["theme"] === "light")
@@ -227,24 +229,4 @@ export async function themeNavigationFindings(
     await context.close()
   }
   return findings
-}
-
-export async function reducedMotionFindings(options: ContextQaOptions): Promise<readonly string[]> {
-  const context = await options.browser.newContext({
-    colorScheme: "light",
-    reducedMotion: "reduce",
-    viewport: { width: options.width, height: 900 },
-  })
-  const page = await context.newPage()
-  try {
-    await page.goto(options.baseUrl, { waitUntil: "networkidle" })
-    const duration = await page
-      .locator(".hero-copy")
-      .evaluate((element) => getComputedStyle(element).animationDuration)
-    return duration === "0.01ms" || duration === "1e-05s"
-      ? []
-      : [`reduced motion resolved hero duration to ${duration} at ${options.width}px`]
-  } finally {
-    await context.close()
-  }
 }

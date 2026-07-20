@@ -17,15 +17,17 @@ methods a provider may use. Remote metadata cannot add login commands or executa
 | Anthropic | Yes | `ANTHROPIC_API_KEY` | Optional CLIProxyAPI adapter |
 | Google | Yes | `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | Optional CLIProxyAPI adapter |
 | Generic catalog provider | When local policy has source environment names | Known source names | No |
-| Ollama compatibility entry | Optional | `OLLAMA_API_KEY` | No auth also available |
+| Ollama compatibility entry | No | `OLLAMA_API_KEY` | No |
+
+Ollama supports no auth, or environment auth via `OLLAMA_API_KEY`; no API-key method.
 
 ## Choose the least complex method
 
 1. Use environment auth when your process already receives a secret securely.
 2. Use API-key storage when the project should own a local secret file.
 3. Use built-in account OAuth for OpenAI or GitHub Copilot when account login is required.
-4. Consider CLIProxyAPI only for Anthropic or Google account auth and only after reading its risk
-   warning.
+4. Consider [CLIProxyAPI](../cliproxy/) only for Anthropic or Google account auth and only after
+   reading its risk warning.
 
 :::caution[Provider terms]
 Account automation may be limited by provider terms and can carry account restriction or blocking

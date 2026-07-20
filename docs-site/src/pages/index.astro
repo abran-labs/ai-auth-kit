@@ -1,4 +1,6 @@
 ---
+import AppearanceMenu from "../components/AppearanceMenu.astro"
+import { EXACT_README_PROMISE } from "../../scripts/readme-contract"
 import "../styles/global.css"
 import "../styles/landing.css"
 import "../styles/landing-components.css"
@@ -11,12 +13,12 @@ const socialImage = new URL(`${base}social-card.png`, site)
 const socialImageAlt = "AI Auth Kit credential ledger mark on warm archival paper"
 const startHref = `${base}start/`
 const quickstartHref = `${base}start/quickstart/`
-const libraryHref = `${base}guides/library/`
 const agentSkillHref = `${base}guides/agent-skill/`
 const securityHref = `${base}reference/security/`
 const title = "AI Auth Kit — Provider auth for TypeScript host tools"
-const description =
-  "Authenticate AI providers, choose models, and keep project credentials private with one TypeScript library."
+const description = "Provider authentication and model selection for host tools."
+const agentSkillInstall =
+  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh"
 ---
 
 <!doctype html>
@@ -35,18 +37,6 @@ const description =
         }
 
         applyTheme(preference)
-        document.addEventListener("DOMContentLoaded", () => {
-          const select = document.querySelector("#landing-theme")
-          if (!(select instanceof HTMLSelectElement)) return
-          select.value = preference
-          select.addEventListener("change", () => {
-            localStorage.setItem("starlight-theme", select.value)
-            applyTheme(select.value)
-          })
-          media.addEventListener("change", () => {
-            if (select.value === "auto") applyTheme("auto")
-          })
-        })
       })()
     </script>
     <meta charset="UTF-8" />
@@ -78,31 +68,25 @@ const description =
         <div class="mast-links">
           <a class="mast-link" href={startHref}>Documentation</a>
           <a class="mast-link github-link" href="https://github.com/abran-labs/ai-auth-kit">GitHub</a>
-          <label class="theme-control">
-            <span>Theme</span>
-            <select class="theme-select" id="landing-theme" aria-label="Color theme">
-              <option value="auto">Auto</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
+          <AppearanceMenu />
         </div>
       </nav>
     </header>
     <main id="main-content">
       <section class="landing-shell hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow">Library / TypeScript</p>
-          <h1 id="hero-title">One auth layer for your AI tools.</h1>
+          <p class="eyebrow">Provider auth / Model selection</p>
+          <h1 id="hero-title">{EXACT_README_PROMISE}</h1>
           <p class="hero-lead">
-            Authenticate providers, choose models, and keep each project's credentials private—
-            without letting remote catalog data decide how login works.
+            Provider authentication and model selection for host tools. Your host keeps ownership
+            of commands, prompts, output, and provider API calls.
           </p>
           <div class="hero-actions">
-            <a class="action action-primary" href={quickstartHref}>Start in 60 seconds</a>
+            <a class="action action-primary" href={quickstartHref}>Quickstart</a>
             <a class="action" href={startHref}>Read the docs</a>
           </div>
-          <pre class="install-ledger" tabindex="0" aria-describedby="install-scroll-note" aria-label="Install exact AI Auth Kit npm release"><code><span>$</span> bun add @abran-labs/ai-auth-kit@1.0.0</code></pre>
+          <p class="install-status">Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.</p>
+          <pre class="install-ledger" tabindex="0" aria-describedby="install-scroll-note" aria-label="Pending exact AI Auth Kit npm command"><code><span>$</span> bun add @abran-labs/ai-auth-kit@1.0.0</code></pre>
           <p class="scroll-note" id="install-scroll-note">Scroll command blocks sideways when needed. This exact runtime package belongs in the Bun lockfile.</p>
         </div>
         <div class="ledger-wrap">
@@ -132,27 +116,31 @@ const description =
       <section class="pathways" aria-labelledby="pathways-title">
         <div class="landing-shell">
           <div class="pathways-heading">
-            <p class="section-label">Choose a path</p>
-            <h2 id="pathways-title">Start with the surface you own.</h2>
+            <p class="section-label">Choose an install</p>
+            <h2 id="pathways-title">Runtime package or agent knowledge.</h2>
           </div>
           <div class="pathway-list">
             <article class="pathway">
               <p class="pathway-number">01 / Library</p>
-              <h3>Build auth into your tool</h3>
-              <p>Create a project kit, resolve credentials at runtime, and keep provider policy local.</p>
-              <a href={libraryHref}>Use the library</a>
+              <h3>Add the runtime library</h3>
+              <p>Use provider auth and model APIs inside the TypeScript host you already own.</p>
+              <p class="install-status">Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.</p>
+              <pre class="install-ledger" tabindex="0" aria-label="Pending exact AI Auth Kit npm command"><code><span>$</span> bun add @abran-labs/ai-auth-kit@1.0.0</code></pre>
+              <a href={quickstartHref}>Open the quickstart</a>
             </article>
             <article class="pathway">
-              <p class="pathway-number">02 / Trust</p>
-              <h3>Read the boundaries first</h3>
-              <p>Separate secret storage, remote metadata, optional adapters, and release provenance.</p>
+              <p class="pathway-number">02 / Agent skill</p>
+              <h3>Install implementation knowledge</h3>
+              <p>Give Claude Code, OpenCode, or Codex version-matched local guidance.</p>
+              <p class="install-status">Pending: use this exact command after the agent-skill-v1.0.0 release asset is uploaded.</p>
+              <pre class="install-ledger" tabindex="0" aria-label="Pending exact AI Auth Kit agent skill command"><code><span>$</span> {agentSkillInstall}</code></pre>
+              <a href={agentSkillHref}>Read the agent skill guide</a>
+            </article>
+            <article class="pathway">
+              <p class="pathway-number">03 / Trust</p>
+              <h3>Keep the boundary explicit</h3>
+              <p>The package and skill are separate; neither silently installs the other.</p>
               <a href={securityHref}>Review security</a>
-            </article>
-            <article class="pathway">
-              <p class="pathway-number">03 / Agent skill</p>
-              <h3>Give your coding agent the map</h3>
-              <p>Install version-matched implementation knowledge without adding runtime code.</p>
-              <a href={agentSkillHref}>Install the agent skill</a>
             </article>
           </div>
         </div>
@@ -160,8 +148,12 @@ const description =
     </main>
     <footer class="site-footer">
       <div class="landing-shell">
-        <span>AI Auth Kit / MIT</span>
-        <span>Built with Astro Starlight</span>
+        <span>AI Auth Kit / <a href="https://github.com/abran-labs/ai-auth-kit/blob/master/LICENSE">MIT</a></span>
+        <span class="footer-links">
+          <a href={startHref}>Documentation</a>
+          <a href="https://github.com/abran-labs/ai-auth-kit">GitHub</a>
+          Built with <a href="https://starlight.astro.build/">Astro Starlight</a>
+        </span>
       </div>
     </footer>
   </body>

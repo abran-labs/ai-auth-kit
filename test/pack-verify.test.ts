@@ -97,16 +97,16 @@ test("Given a valid archive replaced at the same local path, when Bun frozen ins
 
 test("Given a fresh exact packed tarball, when Bun, Node ESM, and TypeScript consumers import its root, then the generated catalog is available", async () => {
   const result = await verifyPack(root);
+  const evidence = join(root, ".omo", "evidence", "packed-library-consumer-verification");
 
   expect(result.inventory).toContain("generated/catalog-snapshot.json");
   expect(result.inventory).toContain("dist/index.js");
   expect(result.inventory).toContain("src/index.ts");
   expect(result.inventory.every((path) => !/(?:^|\/)cli(?:\.|\/|$)/.test(path))).toBeTrue();
   await access(result.tarball);
-  await access(join(root, ".omo", "evidence", "task-3-library-only-npm-release", "consumer-bun.stdout.txt"));
-  await access(join(root, ".omo", "evidence", "task-3-library-only-npm-release", "consumer-node.stdout.txt"));
-  await access(join(root, ".omo", "evidence", "task-3-library-only-npm-release", "consumer-types.stdout.txt"));
-  const evidence = join(root, ".omo", "evidence", "task-3-library-only-npm-release");
+  await access(join(evidence, "consumer-bun.stdout.txt"));
+  await access(join(evidence, "consumer-node.stdout.txt"));
+  await access(join(evidence, "consumer-types.stdout.txt"));
   const [environment, lock, resolved] = await Promise.all([
     readFile(join(evidence, "consumer-environment.txt"), "utf8"),
     readFile(join(evidence, "consumer-lock.txt"), "utf8"),

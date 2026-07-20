@@ -84,7 +84,7 @@ async function runVersionCheck(version: string): Promise<{
   }
 }
 
-test("Given the released skill, when its payload is inspected, then it is complete and pins its own and library versions", async () => {
+test("Given the versioned skill payload, when it is inspected, then it is complete and pins its own and library versions", async () => {
   const requiredPaths = [
     "SKILL.md",
     "VERSION",
@@ -139,10 +139,15 @@ test("Given agent implementation guidance, when knowledge sources are ordered, t
     Bun.file(join(root, "docs-site/src/content/docs/start/quickstart.md")).text(),
     Bun.file(join(root, "docs-site/src/content/docs/guides/agent-skill.md")).text(),
   ]);
-  for (const source of [skill, quickstart, agentGuide]) {
+  for (const source of [skill, agentGuide]) {
     expect(source.toLowerCase()).toContain("primary knowledge");
     expect(source.toLowerCase()).toContain("docs are fallback only");
   }
+  expect(quickstart).toMatch(
+    /\[agent\s+skill\]\(\.\.\/\.\.\/guides\/agent-skill\/\)/i,
+  );
+  expect(quickstart.toLowerCase()).not.toContain("primary knowledge");
+  expect(quickstart.toLowerCase()).not.toContain("docs are fallback only");
 });
 
 test("Given a mismatched library version, when first-use validation runs, then it stops with exact remediation", async () => {

@@ -14,14 +14,14 @@ export default defineConfig({
     sitemap(),
     starlight({
       title: "AI Auth Kit",
-      description: "Provider authentication, model selection, and private project storage.",
+      description: "Provider authentication and model selection for host tools.",
       customCss: ["./src/styles/global.css"],
       sidebar: [
         {
           label: "Start",
           items: [
             { label: "Start here", link: "/start/" },
-            { label: "60-second quickstart", link: "/start/quickstart/" },
+            { label: "Quickstart", link: "/start/quickstart/" },
           ],
         },
         {

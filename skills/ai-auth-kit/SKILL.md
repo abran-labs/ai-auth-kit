@@ -25,6 +25,9 @@ This local checker must report `detected=1.0.0` and `expected=1.0.0`. Do not con
 missing package, mismatch, or checker failure. Report its `path`, `detected`, `expected`, and
 `upgrade` fields exactly. Never update silently. User runs the remediation:
 
+The npm endpoint currently returns 404.
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+
 ```sh
 bun add @abran-labs/ai-auth-kit@1.0.0
 ```
@@ -53,8 +56,11 @@ documentation; never replace the bundled API/security guidance with a generic do
 
 - AI Auth Kit is a library, not a generic command-line product. Never invent a global
   `ai-auth-kit` executable or generic command syntax.
-- Install exact package only: `bun add @abran-labs/ai-auth-kit@1.0.0`. Never recommend `latest`,
-  ranges, Git dependencies, copied source, or internal imports.
+- The npm endpoint currently returns 404.
+  Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+  After publication, install exact package only:
+  `bun add @abran-labs/ai-auth-kit@1.0.0`. Never recommend `latest`, ranges, Git dependencies,
+  copied source, or internal imports.
 - Package supplies runtime behavior. This skill supplies implementation knowledge to coding
   agents. Installing either does not install the other.
 - Remote Models.dev data is metadata only. Never derive commands, executable paths, headers,

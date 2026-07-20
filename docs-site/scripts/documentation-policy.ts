@@ -1,4 +1,7 @@
 import { posix } from "node:path"
+import { appearanceContractViolations } from "./appearance-contract"
+import { providerGuideContractViolations } from "./provider-doc-contract"
+import { readmeContractViolations } from "./readme-contract"
 
 export type DocumentationRoute = {
   readonly commandBlock: boolean
@@ -34,31 +37,21 @@ const installerOrBinaryReleaseClaims = [
 ] as const
 
 const markdownLink = /\[[^\]]*\]\(([^)]+)\)/g
-const sourceDocumentPaths = new Set([
-  "src/content/docs/start/index.md",
-  "src/content/docs/start/quickstart.md",
-  "src/content/docs/guides/library.md",
-  "src/content/docs/guides/providers-auth.md",
-  "src/content/docs/guides/storage-privacy.md",
-  "src/content/docs/guides/models-dev.md",
-  "src/content/docs/guides/cliproxy.md",
-  "src/content/docs/guides/agent-skill.md",
-  "src/content/docs/reference/api.md",
-  "src/content/docs/reference/security.md",
-])
+const documentationSourcePrefix = "src/content/docs/"
+const maintainedRoutePaths = new Set<string>(
+  maintainedDocumentationRoutes.map((route) => route.path),
+)
 
 function isInternalLink(target: string): boolean {
   return !target.startsWith("#") && !target.startsWith("/") && !target.includes(":")
 }
 
-function isKnownDocument(target: string, sourcePath: string): boolean {
-  const location = posix.normalize(
-    posix.join(posix.dirname(sourcePath), target.replace(/\/+$/, "")),
-  )
-  return (
-    sourceDocumentPaths.has(`${location}.md`) ||
-    sourceDocumentPaths.has(posix.join(location, "index.md"))
-  )
+function renderedRoute(target: string, sourcePath: string): string | undefined {
+  if (!sourcePath.startsWith(documentationSourcePrefix)) return undefined
+  const documentPath = sourcePath.slice(documentationSourcePrefix.length).replace(/\.md$/, "")
+  const sourceRoute = documentPath.endsWith("/index") ? posix.dirname(documentPath) : documentPath
+  const route = posix.normalize(posix.join(sourceRoute, target.replace(/\/+$/, "")))
+  return `${route.replace(/^\/+|\/+$/g, "")}/`
 }
 
 export function documentationViolations(source: string, sourcePath: string): readonly string[] {
@@ -73,9 +66,17 @@ export function documentationViolations(source: string, sourcePath: string): rea
   }
   for (const match of source.matchAll(markdownLink)) {
     const target = (match[1] ?? "").split("#")[0] ?? ""
-    if (isInternalLink(target) && !isKnownDocument(target, sourcePath)) {
-      violations.add(`${sourcePath}: broken internal link ${target}`)
+    const route = isInternalLink(target) ? renderedRoute(target, sourcePath) : undefined
+    if (route !== undefined && !maintainedRoutePaths.has(route)) {
+      violations.add(`${sourcePath}: broken rendered route ${route}`)
     }
+  }
+  if (sourcePath === "README.md")
+    for (const violation of readmeContractViolations(source)) violations.add(violation)
+  if (sourcePath === "DESIGN.md")
+    for (const violation of appearanceContractViolations(source)) violations.add(violation)
+  for (const violation of providerGuideContractViolations(source, sourcePath)) {
+    violations.add(violation)
   }
   return [...violations]
 }

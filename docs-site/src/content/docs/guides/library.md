@@ -3,8 +3,10 @@ title: Use the library
 description: Create an AuthKit instance, save credentials, select a model, and resolve runtime auth.
 ---
 
-Install exact version `1.0.0`, then import the package root. Internal source paths are not
-compatibility surfaces.
+The exact command is reserved for npm publication. Internal source paths are not compatibility
+surfaces.
+
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
 
 ```sh
 bun add @abran-labs/ai-auth-kit@1.0.0

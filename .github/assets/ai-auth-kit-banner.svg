@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="600" viewBox="0 0 1800 600" role="img" aria-labelledby="title desc">
+  <title id="title">AI Auth Kit</title>
+  <desc id="desc">AI Auth Kit wordmark with an abstract authorization card symbol.</desc>
+  <defs>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f1eadc"/><stop offset="1" stop-color="#c6bdb0"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1800" height="600" fill="#151411"/>
+  <path d="M0 74H1800M0 526H1800" stroke="#36332d" stroke-width="2"/>
+  <path d="M144 300H260M1540 300H1656" stroke="#4a453b" stroke-width="2"/>
+  <g transform="translate(354 188)">
+    <rect x="0" y="0" width="224" height="224" rx="8" fill="none" stroke="url(#frame)" stroke-width="7"/>
+    <rect x="22" y="22" width="180" height="180" rx="4" fill="none" stroke="#655f55" stroke-width="2"/>
+    <path d="M51 79H111M51 112H151M51 145H126" stroke="#f1eadc" stroke-width="8" stroke-linecap="square"/>
+    <path d="M163 50V174" stroke="#e77c66" stroke-width="9"/>
+    <path d="M163 50V174" stroke="#e77c66" stroke-width="9" filter="url(#glow)" opacity=".32"/>
+    <path d="M178 50V174" stroke="#514b43" stroke-width="2"/>
+    <circle cx="51" cy="177" r="5" fill="#e77c66"/>
+  </g>
+  <g fill="#f1eadc">
+    <text x="646" y="300" font-family="Inter, Arial, sans-serif" font-size="126" font-weight="600" letter-spacing="-5">AI Auth Kit</text>
+    <text x="651" y="356" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" font-weight="600" letter-spacing="3" fill="#c9bfb0">AI AUTHENTICATION, MADE EASY.</text>
+  </g>
+  <path d="M648 392H1290" stroke="#5a5449" stroke-width="2"/>
+  <path d="M648 392H838" stroke="#e77c66" stroke-width="4"/>
+</svg>

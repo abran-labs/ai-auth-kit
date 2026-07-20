@@ -3,8 +3,9 @@ title: Optional CLIProxyAPI account login
 description: Understand when AI Auth Kit provisions CLIProxyAPI and which safety checks apply.
 ---
 
-CLIProxyAPI is an unofficial local account-routing adapter used only for optional Anthropic and
-Google account login. API-key and environment-variable users do not need it.
+[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) is an unofficial local account-routing
+adapter used only for optional Anthropic and Google account login. API-key and environment-variable
+users do not need it.
 
 ## Flow
 

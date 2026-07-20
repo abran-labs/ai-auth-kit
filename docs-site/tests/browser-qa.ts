@@ -6,10 +6,11 @@ import { settleCaptureState } from "./capture-state-qa"
 import {
   commandScrollFindings,
   interactiveFocusFindings,
-  reducedMotionFindings,
   tableScrollFindings,
   themeNavigationFindings,
 } from "./interaction-qa"
+import { appearanceMenuFindings } from "./landing-appearance-qa"
+import { reducedMotionFindings } from "./reduced-motion-qa"
 import { keyboardThemeFindings } from "./theme-keyboard-qa"
 
 class QaFailure extends Error {
@@ -181,6 +182,7 @@ try {
         await context.close()
       }
       const baseUrl = `${origin}${basePath}`
+      findings.push(...(await appearanceMenuFindings({ baseUrl, browser, width })))
       findings.push(...(await themeNavigationFindings({ baseUrl, browser, width })))
       findings.push(...(await reducedMotionFindings({ baseUrl, browser, width })))
     }
