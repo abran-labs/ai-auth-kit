@@ -100,6 +100,14 @@ export interface RuntimeExternalOAuth {
   readonly accountId?: string;
   readonly baseUrl?: string;
   readonly headers: Readonly<Record<string, string>>;
+  readonly health?: "reconnect-required";
+  readonly planUsage?: RuntimePlanUsage;
+}
+
+export interface RuntimePlanUsage {
+  readonly kind: "chatgpt-plan";
+  readonly manageUrl: "https://chatgpt.com/settings/usage";
+  readonly requestRules: "responses-store-false-stream-true";
 }
 
 export interface ResolvedSelection {
