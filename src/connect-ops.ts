@@ -1,7 +1,8 @@
-import { revokeChatGptSession } from "./chatgpt-plan.js";
+import { revokeChatGptSession, ChatGptPlanError } from "./chatgpt-plan.js";
 import { CHATGPT_PLAN_ADAPTER, CLIPROXYAPI_ACCOUNT_ADAPTER } from "./chatgpt-plan-credential.js";
 import { ConnectError, type HostedMethodOffer } from "./connect-flow-state.js";
 import {
+  chatGptPlanModelsForTenant,
   filterChatGptPlanModels,
   hostedApiKeyBaseUrl,
   pickDefaultModel,
@@ -89,9 +90,21 @@ export async function modelsFor(context: ConnectOpsContext, tenantId: string, pr
     }
   }
   const catalogModels = credential?.type === "oauth-external" && credential.metadata.adapter === CHATGPT_PLAN_ADAPTER && provider.id === "openai"
-    ? filterChatGptPlanModels(provider.models)
+    ? await chatGptPlanModels(provider, tenantId, context)
     : provider.models;
   return catalogModels.map(toConnectModel);
+}
+
+async function chatGptPlanModels(provider: ProviderDefinition, tenantId: string, context: ConnectOpsContext): Promise<readonly ModelDefinition[]> {
+  try {
+    const live = await chatGptPlanModelsForTenant({ kit: context.kitFor(tenantId), providerId: provider.id, fetch: context.fetch });
+    if (live !== undefined && live.length > 0) {
+      return live.map((model): ModelDefinition => ({ id: model.id, name: model.name }));
+    }
+  } catch (error) {
+    if (!(error instanceof ChatGptPlanError)) throw error;
+  }
+  return filterChatGptPlanModels(provider.models);
 }
 
 export async function readConnection(context: ConnectOpsContext, tenantId: string, providerId: string): Promise<Connection | undefined> {
