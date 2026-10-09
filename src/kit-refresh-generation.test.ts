@@ -31,13 +31,16 @@ async function seedExpired(kit: AuthKit, refreshToken: string): Promise<External
 }
 
 function delayedRefresh(accessToken: string): void {
-  const fetch = Object.assign(
-    vi.fn<typeof globalThis.fetch>().mockImplementation(async () => {
+  const impl = Object.assign(
+    async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+      void input;
+      void init;
       await new Promise((resolve) => { setTimeout(resolve, 30); });
       return Response.json({ access_token: accessToken, refresh_token: "rt-rotated", expires_in: 3600, scope: SCOPES });
-    }),
+    },
     { preconnect: globalThis.fetch.preconnect },
   );
+  const fetch = Object.assign(vi.fn<typeof globalThis.fetch>().mockImplementation(impl), { preconnect: globalThis.fetch.preconnect });
   vi.spyOn(globalThis, "fetch").mockImplementation(fetch);
 }
 
