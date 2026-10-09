@@ -14,7 +14,7 @@ const SOURCE_FILES = [
   "account-oauth-browser", "account-oauth-chatgpt", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
   "auth-policy-registry", "catalog-adapter", "catalog-cache", "catalog-http", "catalog-normalize", "catalog-refresh", "catalog-runtime",
   "catalog-snapshot", "catalog-source-schema", "catalog", "chatgpt-plan-credential", "chatgpt-plan-id-token", "chatgpt-plan-loopback",
-  "chatgpt-plan-refresh", "chatgpt-plan", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-config",
+  "chatgpt-plan-models", "chatgpt-plan-refresh", "chatgpt-plan", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-config",
   "cliproxyapi-connector", "cliproxyapi-http", "cliproxyapi-management",
   "cliproxyapi-release", "cliproxyapi", "connect-flow-state", "connect-flows", "connect-ops", "connect-protocol", "connect-runtime", "connect-service", "credential-removal", "external-auth", "hosted-store", "hosted-types", "index", "kit-runtime-auth", "kit", "picker-auth-methods", "picker",
   "safe-dir", "schema", "storage", "types",

@@ -49,7 +49,6 @@ export {
 export {
   CHATGPT_JWKS_URL,
   type ChatGptIdTokenCheck,
-  resetChatGptSigningKeysForTests,
   verifyChatGptIdToken,
 } from "./chatgpt-plan-id-token.js";
 export {

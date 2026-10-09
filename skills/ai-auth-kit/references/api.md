@@ -35,16 +35,19 @@ Import only from `@abran-labs/ai-auth-kit`. Internal file paths are not compatib
   `CHATGPT_PLAN_RESOURCE`, `CHATGPT_PLAN_SCOPE`, `CHATGPT_PLAN_SCOPES`,
   `CHATGPT_DYNAMIC_CLIENT_ID`, `CHATGPT_CALLBACK_PATH`, `CHATGPT_DEFAULT_CALLBACK_PORT`,
   `CHATGPT_ISSUER`, `CHATGPT_JWKS_URL`, `CHATGPT_PLAN_ADAPTER`, `CLIPROXYAPI_ACCOUNT_ADAPTER`,
-  `CHATGPT_PLAN_REFRESH_WINDOW_MS`, `ChatGptPlanError`, `ChatGptPlanErrorCode`,
+  `CHATGPT_PLAN_REFRESH_WINDOW_MS`, `CHATGPT_PLAN_MODELS_URL`, `ChatGptPlanError`, `ChatGptPlanErrorCode`,
   `ChatGptIdentity`, `ChatGptIdTokenCheck`, `createChatGptHostId`, `isChatGptHostId`,
   `startChatGptAuthorization`, `parseChatGptCallback`, `exchangeChatGptCode`,
   `refreshChatGptTokens`, `revokeChatGptSession`, `verifyChatGptIdToken`,
-  `resetChatGptSigningKeysForTests`, `ChatGptAuthorization`, `ChatGptAuthorizationRequest`,
+  `planNotGrantedCause`, `ChatGptPlanNotGrantedCause`, `ChatGptAuthorization`, `ChatGptAuthorizationRequest`,
   `ChatGptCallbackResult`, `ChatGptPlanTokens`, `ChatGptSignIn`, `ChatGptExchangeInput`,
   `ChatGptRefreshInput`, `ChatGptPendingAuthorization`, `chatGptPlanSecretRefs`,
-  `chatGptPlanMetadata`, `parseChatGptPlanMetadata`, `ChatGptPlanSecretRefs`,
-  `ChatGptPlanMetadata`, `ensureChatGptPlanAccess`, `ChatGptPlanRefreshContext`,
-  `ChatGptPlanAccess`, `startChatGptLoopback`, `ChatGptLoopback`, `ChatGptCallbackOutcome`.
+  `chatGptPlanMetadata`, `chatGptPlanDisabledMetadata`, `ChatGptPlanDisabledRegistration`,
+  `parseChatGptPlanMetadata`, `ChatGptPlanSecretRefs`,
+  `ChatGptPlanMetadata`, `ensureChatGptPlanAccess`, `isSameChatGptGeneration`,
+  `ChatGptPlanRefreshContext`, `ChatGptPlanTokenWrite`, `ChatGptPlanLock`,
+  `ChatGptPlanAccess`, `listChatGptPlanModels`, `ChatGptPlanModelsInput`,
+  `startChatGptLoopback`, `ChatGptLoopback`, `ChatGptCallbackOutcome`.
 - Storage: `emptyState`, `FileAuthKitStore`, `FileSecretStore`, `globalConfigDir`,
   `globalStorage`, `projectConfigDir`, `projectStorage`.
 - Definitions: `ApiKeyCredential`, `AuthKitOptions`, `AuthKitState`, `AuthKitStorage`,
@@ -144,6 +147,13 @@ optional `text` (manual redirect-URL paste for headless sessions), and `info`.
 - Re-login reuses the issued `clientId` and saved email from the
   `openai-chatgpt-plan` credential. The per-host id persists under
   `host:chatgpt:ext-agent-host-id` and survives secret reconcile.
+- Re-login sends the stored ID token as `id_token_hint` (redacted from CLI output).
+  A declined plan scope keeps the registration with `planUsage: "disabled"` and
+  `health: "reconnect-required"` (no tokens) so the next attempt re-consents with the
+  issued `clientId`.
+- Hosted `models` for plan connections lists the account catalog via
+  `listChatGptPlanModels` (`GET https://api.openai.com/v1/models`, `visibility: "list"`,
+  server order), falling back to the catalog heuristic when unreachable.
 - Runtime auth refreshes through `ensureChatGptPlanAccess` and returns
   `adapter: "openai-chatgpt-plan"` with `baseUrl: "https://api.openai.com/v1"`,
   plus `health: "reconnect-required"` and `planUsage` (`kind: "chatgpt-plan"`,
