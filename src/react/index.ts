@@ -14,7 +14,7 @@ export {
 	type ConnectState,
 	type ConnectSubmitInput,
 } from "./connect-state.js";
-export { ConnectionCard, ModelPickerView, StatusNotice } from "./entity-views.js";
+export { ConnectionCard, DisconnectNotice, ModelPickerView, StatusNotice } from "./entity-views.js";
 export { FeaturedActions } from "./featured-providers.js";
 export { MethodList, ProviderCatalog } from "./provider-catalog.js";
 export {

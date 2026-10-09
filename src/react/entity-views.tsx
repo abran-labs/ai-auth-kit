@@ -1,5 +1,19 @@
 import { useId, type JSX } from "react";
-import type { ConnectModel, Connection } from "../connect-protocol.js";
+import type { ConnectModel, ConnectNotice, Connection } from "../connect-protocol.js";
+
+export function DisconnectNotice(properties: {
+	readonly notice: ConnectNotice;
+}): JSX.Element {
+	if (properties.notice !== "remote-revocation-unconfirmed") return <span data-aak-notice="" />;
+	return (
+		<div data-aak-notice="remote-revocation-unconfirmed" role="status">
+			<span>Signed out here. To fully disconnect, remove Orbi in ChatGPT Settings → Security → Sign in with ChatGPT.</span>{" "}
+			<a data-aak-notice-link="" href="https://chatgpt.com/#settings/Security">
+				Open ChatGPT security settings
+			</a>
+		</div>
+	);
+}
 
 export function StatusNotice(properties: {
 	readonly message: string;
