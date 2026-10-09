@@ -45,10 +45,11 @@ test("Given a first sign-in, when the browser loopback completes, then tokens ar
   const auth = new URL(captured.authorizationUrl ?? "");
   expect(auth.searchParams.get("client_id")).toBe("dynamic_agent_client");
   expect(auth.searchParams.get("agent_name_hint")).toBe("TestHost");
-  expect(auth.searchParams.get("scope")?.split(" ")).toContain(CHATGPT_PLAN_SCOPE);
+  expect(auth.searchParams.get("scope")?.split(" ") ?? []).toContain(CHATGPT_PLAN_SCOPE);
   expect(captured.redirectUri ?? "").toMatch(/^http:\/\/127\.0\.0\.1:\d+\/auth\/callback$/);
   const hostId = await kit.secrets.get(CHATGPT_HOST_ID_REF);
-  expect(hostId).toMatch(/^urn:uuid:/);
+  expect(hostId ?? "").toMatch(/^urn:uuid:/);
+  if (hostId === undefined) throw new Error("ChatGPT host id was not stored");
   expect(auth.searchParams.get("ext_agent_host_id")).toBe(hostId);
   expect(credential).toEqual(expect.objectContaining({
     type: "oauth-external",

@@ -19,7 +19,7 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-function tokenFetch(body: unknown, status = 200): typeof globalThis.fetch {
+function tokenFetch(body: unknown, status = 200) {
   const fetch = Object.assign(vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(body, { status })), { preconnect: globalThis.fetch.preconnect });
   vi.spyOn(globalThis, "fetch").mockImplementation(fetch);
   return fetch;

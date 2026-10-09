@@ -63,9 +63,7 @@ test("OpenAI oauth-external defaults to Sign in with ChatGPT plan", async () => 
 	const kit = createProjectAuthKit("test-tool", { rootDir: dir });
 	const infoSpy = vi.fn<(message: string) => void>();
 	let nonce = "";
-	const fetch = Object.assign(vi
-		.fn<typeof globalThis.fetch>()
-		.mockImplementation(async (input, init) => {
+	const handleFetch = Object.assign(async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
 			const url = String(input);
 			if (url.endsWith("/.well-known/jwks.json")) {
 				return Response.json({ keys: [{ ...jwk, kid: KID, alg: "RS256", use: "sig" }] });
@@ -77,7 +75,10 @@ test("OpenAI oauth-external defaults to Sign in with ChatGPT plan", async () => 
 				expires_in: 3600,
 				scope: PLAN_SCOPES,
 			});
-		}), { preconnect: globalThis.fetch.preconnect });
+		}, { preconnect: globalThis.fetch.preconnect });
+	const fetch = Object.assign(vi
+		.fn<typeof globalThis.fetch>()
+		.mockImplementation(handleFetch), { preconnect: globalThis.fetch.preconnect });
 	let callbackUrl: URL | undefined;
 	const promptAdapter = promptAdapterWith(infoSpy);
 

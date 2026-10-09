@@ -29,7 +29,7 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-async function signedInKit(): Promise<{ readonly revokeCalls: { readonly url: string; readonly form: URLSearchParams }[]; readonly fetch: AuthFetch }> {
+async function signedInKit() {
   const captured: ChatGptTestCaptured = {};
   const openai = createFakeOpenAi(captured);
   await loginChatGptPlan(kit, kit.getProvider("openai"), createAdapter(), createDeps(captured, openai.fetch, {
