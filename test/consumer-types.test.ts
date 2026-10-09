@@ -30,6 +30,7 @@ test("Given source and built consumer fixtures, when TypeScript compiles them, t
           types: ["bun", "node"],
           paths: {
             "@clack/prompts": [join(root, "node_modules", "@clack", "prompts", "dist", "index.d.mts")],
+            zod: [join(root, "node_modules", "zod", "index.d.ts")],
             "@contract/source": [join(root, "src", "index.ts")],
             "@contract/built": [join(declarationsDirectory, "index.d.ts")],
           },

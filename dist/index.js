@@ -4,6 +4,8 @@ export { loginAccountOAuthProvider, loginGitHubCopilotAccount, loginOpenAiAccoun
 export { CLIPROXYAPI_LATEST_RELEASE_URL, CLIPROXYAPI_REPO, provisionCliProxyApi, provisionCliProxyApiForProvider, runCliProxyApiLogin, } from "./cliproxyapi.js";
 export { CLIPROXYAPI_BASE_URL, getCliProxyApiLabel, getCliProxyApiWarning, getExternalAuthMetadata, isAccountOAuthProvider, isCliProxyApiProvider, isExternalOAuthProvider, } from "./external-auth.js";
 export { AuthKit, createAuthKit, createProjectAuthKit } from "./kit.js";
+export { createConnectService, } from "./connect-service.js";
+export { createMemoryPendingFlowStore, createMemoryTenantStore, } from "./hosted-store.js";
 export { confirmExternalOAuthWarning, getAuthMethodHint, getAuthMethodLabel, getOAuthMethodLabel, loginWithPrompts, pickAuthMethod, pickModel, pickProvider, } from "./picker.js";
 export { emptyState, FileAuthKitStore, FileSecretStore, globalConfigDir, globalStorage, projectConfigDir, projectStorage, } from "./storage.js";
 //# sourceMappingURL=index.js.map

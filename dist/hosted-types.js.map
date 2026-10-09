@@ -1,0 +1,1 @@
+{"version":3,"file":"hosted-types.js","sourceRoot":"../src/","sources":["hosted-types.ts"],"names":[],"mappings":"AAqDA,MAAM,OAAO,iBAAkB,SAAQ,KAAK;IAErB;IADZ,IAAI,GAAG,mBAAmB,CAAC;IACpC,YAAqB,IAA2B,EAAE,OAAe,EAAE,OAAsB;QACvF,KAAK,CAAC,OAAO,EAAE,OAAO,CAAC,CAAC;QADL,SAAI,GAAJ,IAAI,CAAuB;IAEhD,CAAC;CACF"}

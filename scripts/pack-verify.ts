@@ -14,7 +14,7 @@ const SOURCE_FILES = [
   "account-oauth-browser", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
   "auth-policy-registry", "catalog-adapter", "catalog-cache", "catalog-http", "catalog-normalize", "catalog-refresh", "catalog-runtime",
   "catalog-snapshot", "catalog-source-schema", "catalog", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-http",
-  "cliproxyapi-release", "cliproxyapi", "credential-removal", "external-auth", "index", "kit-runtime-auth", "kit", "picker",
+  "cliproxyapi-release", "cliproxyapi", "connect-flow-state", "connect-flows", "connect-ops", "connect-runtime", "connect-service", "credential-removal", "external-auth", "hosted-store", "index", "kit-runtime-auth", "kit", "picker",
   "safe-dir", "schema", "storage", "types",
 ] as const;
 const DIST_FILES = [...SOURCE_FILES, "catalog-index"] as const;
