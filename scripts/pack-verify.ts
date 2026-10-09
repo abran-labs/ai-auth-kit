@@ -11,10 +11,11 @@ const EVIDENCE_DIRECTORY = ".omo/evidence/packed-library-consumer-verification";
 const GENERATED_CATALOG = ["generated/catalog-provenance.json", "generated/catalog-snapshot.json"] as const;
 const ROOT_FILES = ["README.md", "LICENSE", "package.json"] as const;
 const SOURCE_FILES = [
-  "account-oauth-browser", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
+  "account-oauth-browser", "account-oauth-chatgpt", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
   "auth-policy-registry", "catalog-adapter", "catalog-cache", "catalog-http", "catalog-normalize", "catalog-refresh", "catalog-runtime",
-  "catalog-snapshot", "catalog-source-schema", "catalog", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-http",
-  "cliproxyapi-release", "cliproxyapi", "credential-removal", "external-auth", "index", "kit-runtime-auth", "kit", "picker",
+  "catalog-snapshot", "catalog-source-schema", "catalog", "chatgpt-plan-credential", "chatgpt-plan-id-token", "chatgpt-plan-loopback",
+  "chatgpt-plan-refresh", "chatgpt-plan", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-http",
+  "cliproxyapi-release", "cliproxyapi", "connect-protocol", "credential-removal", "external-auth", "hosted-types", "index", "kit-runtime-auth", "kit", "picker-auth-methods", "picker",
   "safe-dir", "schema", "storage", "types",
 ] as const;
 const DIST_FILES = [...SOURCE_FILES, "catalog-index"] as const;
