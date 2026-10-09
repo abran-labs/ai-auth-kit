@@ -135,11 +135,12 @@ async function submitChatGpt(context: ConnectFlowContext, tenantId: string, flow
   });
   const kit = context.kitFor(tenantId);
   const refs = chatGptPlanSecretRefs(pending.providerId);
-  await kit.secrets.set(refs.accessTokenRef, signIn.accessToken);
-  await kit.secrets.set(refs.refreshTokenRef, signIn.refreshToken);
   const stored: Record<string, string> = { ...chatGptPlanMetadata(signIn, refs) };
   delete stored.idTokenRef;
-  await kit.saveExternalOAuth(pending.providerId, stored);
+  await kit.saveExternalOAuth(pending.providerId, stored, [
+    [refs.accessTokenRef, signIn.accessToken],
+    [refs.refreshTokenRef, signIn.refreshToken],
+  ]);
   return connectedStep(context, tenantId, pending.providerId);
 }
 

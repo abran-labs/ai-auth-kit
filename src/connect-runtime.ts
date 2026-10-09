@@ -1,6 +1,6 @@
 import { CHATGPT_PLAN_RESOURCE } from "./chatgpt-plan.js";
 import { CHATGPT_PLAN_ADAPTER, CLIPROXYAPI_ACCOUNT_ADAPTER } from "./chatgpt-plan-credential.js";
-import { ensureChatGptPlanAccess } from "./chatgpt-plan-refresh.js";
+import { ensureChatGptPlanAccess, isSameChatGptGeneration, type ChatGptPlanLock } from "./chatgpt-plan-refresh.js";
 import { CHATGPT_USAGE_URL, type ConnectStatus, type Connection } from "./connect-protocol.js";
 import type { ProxyAccountBinding, ProxyAccountConnector } from "./hosted-types.js";
 import { AuthKit } from "./kit.js";
@@ -98,6 +98,7 @@ export interface ConnectionRuntimeDeps {
   readonly proxyAccounts: ProxyAccountConnector | undefined;
   readonly fetch: AuthFetch | undefined;
   readonly now: () => number;
+  readonly lock?: ChatGptPlanLock;
 }
 
 export async function resolveConnectionRuntime(deps: ConnectionRuntimeDeps): Promise<import("./hosted-types.js").ConnectionRuntime | undefined> {
@@ -125,10 +126,22 @@ export async function resolveConnectionRuntime(deps: ConnectionRuntimeDeps): Pro
       key: `${deps.tenantId}:openai`,
       credential,
       secrets: deps.kit.secrets,
-      save: async (next) => {
-        const current = await deps.kit.store.read();
-        await deps.kit.store.write({ ...current, credentials: { ...current.credentials, [selected.providerId]: next } });
+      save: async (next, tokens) => deps.kit.runExclusive(async () => {
+        const state = await deps.kit.store.read();
+        const live = state.credentials[selected.providerId];
+        if (live?.type !== "oauth-external" || !isSameChatGptGeneration(live, next)) return;
+        if (tokens !== undefined) {
+          await deps.kit.secrets.set(tokens.accessTokenRef, tokens.accessToken);
+          await deps.kit.secrets.set(tokens.refreshTokenRef, tokens.refreshToken);
+        }
+        await deps.kit.store.write({ ...state, credentials: { ...state.credentials, [selected.providerId]: next }, updatedAt: new Date().toISOString() });
+      }),
+      readCurrent: async () => {
+        const state = await deps.kit.store.read();
+        const live = state.credentials[selected.providerId];
+        return live?.type === "oauth-external" ? live : undefined;
       },
+      ...(deps.lock === undefined ? {} : { lock: deps.lock }),
       ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
       now: deps.now,
     });

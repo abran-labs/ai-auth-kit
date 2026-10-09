@@ -147,9 +147,10 @@ export async function loginChatGptPlan(
       now: deps.now?.() ?? Date.now(),
     });
     const refs = chatGptPlanSecretRefs(provider.id);
-    await kit.secrets.set(refs.accessTokenRef, signIn.accessToken);
-    await kit.secrets.set(refs.refreshTokenRef, signIn.refreshToken);
-    return kit.saveExternalOAuth(provider.id, chatGptPlanMetadata(signIn, refs));
+    return kit.saveExternalOAuth(provider.id, chatGptPlanMetadata(signIn, refs), [
+      [refs.accessTokenRef, signIn.accessToken],
+      [refs.refreshTokenRef, signIn.refreshToken],
+    ]);
   } catch (error) {
     if (error instanceof ChatGptPlanError) prompts.info(messageFor(error));
     throw error;
@@ -176,19 +177,31 @@ export async function signOutChatGptPlan(kit: AuthKit, deps: { readonly fetch?: 
       confirmed = false;
     }
   }
-  if (metadata.accessTokenRef !== undefined) await kit.secrets.delete(metadata.accessTokenRef);
-  if (metadata.refreshTokenRef !== undefined) await kit.secrets.delete(metadata.refreshTokenRef);
-  if (metadata.idTokenRef !== undefined) await kit.secrets.delete(metadata.idTokenRef);
-  // Keep clientId/subject/email so re-login reuses the issued registration; health flags reconnect.
-  await kit.saveExternalOAuth("openai", {
-    adapter: metadata.adapter,
-    clientId: metadata.clientId,
-    subject: metadata.subject,
-    ...(metadata.email === undefined ? {} : { email: metadata.email }),
-    expiresAt: metadata.expiresAt,
-    scopes: metadata.scopes,
-    baseUrl: metadata.baseUrl,
-    health: "reconnect-required",
+  await kit.runExclusive(async () => {
+    const live = await kit.store.read();
+    const current = live.credentials.openai;
+    if (current?.type !== "oauth-external") return;
+    const currentMetadata = parseChatGptPlanMetadata(current.metadata);
+    if (currentMetadata === undefined) return;
+    if (currentMetadata.accessTokenRef !== undefined) await kit.secrets.delete(currentMetadata.accessTokenRef);
+    if (currentMetadata.refreshTokenRef !== undefined) await kit.secrets.delete(currentMetadata.refreshTokenRef);
+    if (currentMetadata.idTokenRef !== undefined) await kit.secrets.delete(currentMetadata.idTokenRef);
+    // Keep clientId/subject/email so re-login reuses the issued registration; health flags reconnect.
+    const next: Record<string, string> = {
+      adapter: currentMetadata.adapter,
+      clientId: currentMetadata.clientId,
+      subject: currentMetadata.subject,
+      expiresAt: currentMetadata.expiresAt,
+      scopes: currentMetadata.scopes,
+      baseUrl: currentMetadata.baseUrl,
+      health: "reconnect-required",
+    };
+    if (currentMetadata.email !== undefined) next.email = currentMetadata.email;
+    await kit.store.write({
+      ...live,
+      credentials: { ...live.credentials, openai: { type: "oauth-external", metadata: next, createdAt: current.createdAt } },
+      updatedAt: new Date().toISOString(),
+    });
   });
   return { remoteRevocationConfirmed: confirmed };
 }
