@@ -30,3 +30,22 @@ The default local base URL is `http://localhost:8317`.
 A checksum detects changed bytes relative to an expected digest. It does not independently prove
 who produced the release. Decide whether this adapter fits your provider and account risk.
 :::
+
+## Hosted multi-account mode
+
+One CLIProxyAPI instance can serve many tenants (for example Discord guilds), each with its own
+Claude account. `createCliProxyAccountConnector` drives the management API (`/v8/management`) for
+the `redirect-paste`/`working` connect steps, and `renderCliProxyServerConfig` renders a hardened
+v8 server config.
+
+- One proxy, one host: the server binds to `127.0.0.1`; only the host holds the management key
+  and client API keys. Any client key can address any model prefix, so never expose the proxy
+  port to tenants.
+- Per-tenant prefix pinning: each connected credential gets a `prefix` (default `t` + 16 hex of
+  `sha256(tenantId)`), and requests use `<prefix>/<model>` on the OpenAI chat wire at `/v1`.
+  (`/v1/messages` with the same prefixed model also works.)
+- `routing.force-model-prefix: true` keeps unprefixed requests off tenant credentials.
+- One Claude account maps to one tenant: credential filenames derive from account identity, so a
+  repeat connect with the same account yields `account_in_use` instead of sharing the file.
+- Same account-terms risk as local mode: subscription automation may violate provider terms and
+  get the account limited.

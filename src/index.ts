@@ -83,6 +83,27 @@ export {
 	provisionCliProxyApiForProvider,
 	runCliProxyApiLogin,
 } from "./cliproxyapi.js";
+export { renderCliProxyServerConfig, type CliProxyServerConfigOptions } from "./cliproxyapi-config.js";
+export {
+	CLIPROXY_CALLBACK_PREFIX,
+	createCliProxyAccountConnector,
+	defaultCliProxyRoutePrefix,
+	getCliProxyHostedWarning,
+	type CliProxyAccountConnectorOptions,
+	type CliProxyAccountProvider,
+} from "./cliproxyapi-connector.js";
+export {
+	CliProxyManagementError,
+	createCliProxyManagementClient,
+	type CliProxyAuthUrl,
+	type CliProxyCredentialFile,
+	type CliProxyCredentialModel,
+	type CliProxyManagementClient,
+	type CliProxyManagementErrorCode,
+	type CliProxyManagementFetch,
+	type CliProxyManagementOptions,
+	type CliProxyOAuthStatusResult,
+} from "./cliproxyapi-management.js";
 export {
 	CLIPROXYAPI_BASE_URL,
 	getCliProxyApiLabel,

@@ -10,6 +10,9 @@ export { CHATGPT_PLAN_REFRESH_WINDOW_MS, ensureChatGptPlanAccess, } from "./chat
 export * from "./connect-protocol.js";
 export * from "./hosted-types.js";
 export { CLIPROXYAPI_LATEST_RELEASE_URL, CLIPROXYAPI_REPO, provisionCliProxyApi, provisionCliProxyApiForProvider, runCliProxyApiLogin, } from "./cliproxyapi.js";
+export { renderCliProxyServerConfig } from "./cliproxyapi-config.js";
+export { CLIPROXY_CALLBACK_PREFIX, createCliProxyAccountConnector, defaultCliProxyRoutePrefix, getCliProxyHostedWarning, } from "./cliproxyapi-connector.js";
+export { CliProxyManagementError, createCliProxyManagementClient, } from "./cliproxyapi-management.js";
 export { CLIPROXYAPI_BASE_URL, getCliProxyApiLabel, getCliProxyApiWarning, getExternalAuthMetadata, isAccountOAuthProvider, isCliProxyApiProvider, isExternalOAuthProvider, } from "./external-auth.js";
 export { AuthKit, createAuthKit, createProjectAuthKit } from "./kit.js";
 export { createConnectService, } from "./connect-service.js";
