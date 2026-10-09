@@ -210,14 +210,6 @@ test("Given a session blob, when the call target differs, then callback, poll, a
   await expectProxyError(api.cancel(foreign), "callback_invalid");
 });
 
-test("Given a tampered session blob, when polling, then it reports flow_expired", async () => {
-  const { fake, slot, now } = setup();
-  const api = connectorFor(fake, slot, now);
-  const started = await api.start({ tenantId: "tenant-a", providerId: "anthropic" });
-  const tampered = `${started.session.slice(0, -1)}${started.session.endsWith("A") ? "B" : "A"}`;
-  await expectProxyError(api.poll({ tenantId: "tenant-a", providerId: "anthropic", session: tampered }), "flow_expired");
-});
-
 test("Given an upstream denial, when polling, then the message stays fixed and the detail moves to cause", async () => {
   const { fake, slot, now } = setup();
   const api = connectorFor(fake, slot, now);

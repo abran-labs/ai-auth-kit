@@ -63,8 +63,8 @@ function verifySession(secret, session) {
     const parts = session.split(".");
     if (parts.length !== 3 || parts[0] !== "v2" || parts[1] === undefined || parts[2] === undefined)
         throw invalid;
-    const expected = createHmac("sha256", secret).update(parts[1], "utf8").digest();
-    const actual = Buffer.from(parts[2], "base64url");
+    const expected = Buffer.from(createHmac("sha256", secret).update(parts[1], "utf8").digest("base64url"), "utf8");
+    const actual = Buffer.from(parts[2], "utf8");
     if (actual.length !== expected.length || !timingSafeEqual(actual, expected))
         throw invalid;
     try {
