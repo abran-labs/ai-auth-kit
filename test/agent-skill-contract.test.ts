@@ -28,6 +28,14 @@ const packageFixtureSchema = z.object({
           types: z.string(),
         })
         .strict(),
+      "./react": z
+        .object({
+          bun: z.literal("./src/react/index.ts"),
+          import: z.literal("./dist/react/index.js"),
+          types: z.literal("./dist/react/index.d.ts"),
+        })
+        .strict()
+        .optional(),
     })
     .strict(),
 });

@@ -76,7 +76,7 @@ describe("contract validator", () => {
   })
 
   test("enumerates every maintained route for browser capture", () => {
-    expect(maintainedDocumentationRoutes).toHaveLength(12)
+    expect(maintainedDocumentationRoutes).toHaveLength(13)
   })
 
   test("keeps docs activation concise with exact commands and canonical adapter provenance", async () => {
@@ -141,6 +141,7 @@ describe("contract validator", () => {
       "guides/models-dev",
       "guides/cliproxy",
       "guides/hosted",
+      "guides/web-connect",
       "guides/agent-skill",
       "reference/api",
       "reference/security",
@@ -165,6 +166,7 @@ describe("contract validator", () => {
         writeFile(resolve(distRoot, "guides/models-dev/index.html"), "catalog"),
         writeFile(resolve(distRoot, "guides/cliproxy/index.html"), "adapter"),
         writeFile(resolve(distRoot, "guides/hosted/index.html"), "hosted"),
+        writeFile(resolve(distRoot, "guides/web-connect/index.html"), "web connect"),
         writeFile(resolve(distRoot, "guides/agent-skill/index.html"), "agent skill"),
         writeFile(resolve(distRoot, "reference/api/index.html"), "api"),
         writeFile(resolve(distRoot, "reference/security/index.html"), "security"),

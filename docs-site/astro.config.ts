@@ -33,6 +33,7 @@ export default defineConfig({
             { label: "Models.dev", link: "/guides/models-dev/" },
             { label: "CLIProxyAPI", link: "/guides/cliproxy/" },
             { label: "Hosted mode", link: "/guides/hosted/" },
+            { label: "Web connect", link: "/guides/web-connect/" },
             { label: "Agent skill", link: "/guides/agent-skill/" },
           ],
         },

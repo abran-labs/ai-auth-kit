@@ -7,7 +7,10 @@ import { verifyDist } from "../scripts/verify-dist.js";
 const root = process.cwd();
 const packageManifestSchema = z.object({
   bin: z.never().optional(),
-  exports: z.object({ ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict() }).strict(),
+  exports: z.object({
+    ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict(),
+    "./react": z.object({ bun: z.literal("./src/react/index.ts"), import: z.literal("./dist/react/index.js"), types: z.literal("./dist/react/index.d.ts") }).strict(),
+  }).strict(),
   files: z.array(z.string()),
   publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
   repository: z.object({ type: z.string(), url: z.string() }),
@@ -71,6 +74,18 @@ test("Given the canonical manifest, when package entry points are inspected, the
     "src/kit.ts",
     "src/picker-auth-methods.ts",
     "src/picker.ts",
+    "src/react/ConnectPanel.tsx",
+    "src/react/connect-flow.tsx",
+    "src/react/connect-state.ts",
+    "src/react/entity-views.tsx",
+    "src/react/featured-providers.tsx",
+    "src/react/index.ts",
+    "src/react/provider-catalog.tsx",
+    "src/react/step-views.tsx",
+    "src/react/styles.ts",
+    "src/react/transport.ts",
+    "src/react/use-connect.ts",
+    "src/react/use-step-polling.ts",
     "src/safe-dir.ts",
     "src/schema.ts",
     "src/storage.ts",
@@ -88,6 +103,9 @@ test("Given the canonical manifest, when package entry points are inspected, the
   await access(join(root, "dist", "index.js"));
   await access(join(root, "dist", "index.d.ts"));
   await access(join(root, "dist", "index.js.map"));
+  await access(join(root, "dist", "react", "index.js"));
+  await access(join(root, "dist", "react", "index.d.ts"));
+  await access(join(root, "dist", "react", "index.js.map"));
   const ignored = Bun.spawn({ cmd: ["git", "check-ignore", "dist/index.js"], cwd: root, stdout: "pipe", stderr: "pipe" });
   expect(await ignored.exited, `${await new Response(ignored.stdout).text()}${await new Response(ignored.stderr).text()}`).toBe(1);
 });
@@ -141,7 +159,10 @@ test("Given the expanded package payload, when Bun dry-runs packing, then root l
   expect(exitCode, stderr).toBe(0);
   expect(payloadPaths).toContain("dist/index.js");
   expect(payloadPaths).toContain("dist/index.d.ts");
+  expect(payloadPaths).toContain("dist/react/index.js");
+  expect(payloadPaths).toContain("dist/react/index.d.ts");
   expect(payloadPaths).toContain("src/index.ts");
+  expect(payloadPaths).toContain("src/react/index.ts");
   expect(payloadPaths.some((path) => /(?:^|\/)(?:cli|version)(?:\.|\/|$)|(?:^|\/)install\.sh|(?:^|\/)installer-manager(?:\/|$)|(?:^|\/)release(?:\/|$)|(?:^|\/)\.npmrc$|(?:^|\/)(?:\.env|credentials)(?:\.|$)|\.(?:exe|dll|dylib|so|node)$/.test(path))).toBeFalse();
 });
 

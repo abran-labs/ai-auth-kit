@@ -20,6 +20,7 @@ export const maintainedDocumentationRoutes = [
   { commandBlock: false, name: "models-dev", path: "guides/models-dev/" },
   { commandBlock: false, name: "cliproxy", path: "guides/cliproxy/" },
   { commandBlock: false, name: "hosted", path: "guides/hosted/" },
+  { commandBlock: false, name: "web-connect", path: "guides/web-connect/" },
   { commandBlock: true, name: "agent-skill", path: "guides/agent-skill/" },
   { commandBlock: false, name: "api", path: "reference/api/" },
   { commandBlock: false, name: "security", path: "reference/security/" },
