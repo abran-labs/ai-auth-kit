@@ -68,6 +68,14 @@ export function documentationViolations(source: string, sourcePath: string): rea
   }
   for (const match of source.matchAll(markdownLink)) {
     const target = (match[1] ?? "").split("#")[0] ?? ""
+    if (
+      target.startsWith("/") &&
+      !target.startsWith("//") &&
+      sourcePath.startsWith(documentationSourcePrefix)
+    ) {
+      violations.add(`${sourcePath}: root-absolute link escapes base ${target}`)
+      continue
+    }
     const route = isInternalLink(target) ? renderedRoute(target, sourcePath) : undefined
     if (route !== undefined && !maintainedRoutePaths.has(route)) {
       violations.add(`${sourcePath}: broken rendered route ${route}`)

@@ -57,6 +57,22 @@ describe("contract validator", () => {
     ])
   })
 
+  test("rejects root-absolute documentation links that escape the deployed base path", () => {
+    // Given: a guide linking with a root-absolute path
+    const rootAbsoluteLink = "Follow the [library guide](/guides/library/) first."
+
+    // When: documentation policy checks the guide
+    const violations = documentationViolations(
+      rootAbsoluteLink,
+      "src/content/docs/guides/web-connect.md",
+    )
+
+    // Then: the link is rejected because it ignores the Pages base path
+    expect(violations).toEqual([
+      "src/content/docs/guides/web-connect.md: root-absolute link escapes base /guides/library/",
+    ])
+  })
+
   test("reports generic installer and binary-release claims", () => {
     expect(
       documentationViolations(
