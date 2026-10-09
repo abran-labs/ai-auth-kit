@@ -15,6 +15,10 @@ export { CLIPROXY_CALLBACK_PREFIX, createCliProxyAccountConnector, defaultCliPro
 export { CliProxyManagementError, createCliProxyManagementClient, type CliProxyAuthUrl, type CliProxyCredentialFile, type CliProxyCredentialModel, type CliProxyManagementClient, type CliProxyManagementErrorCode, type CliProxyManagementFetch, type CliProxyManagementOptions, type CliProxyOAuthStatusResult, } from "./cliproxyapi-management.js";
 export { CLIPROXYAPI_BASE_URL, getCliProxyApiLabel, getCliProxyApiWarning, getExternalAuthMetadata, isAccountOAuthProvider, isCliProxyApiProvider, isExternalOAuthProvider, } from "./external-auth.js";
 export { AuthKit, createAuthKit, createProjectAuthKit } from "./kit.js";
+export { createConnectService, type ChatGptPlanHostOptions, type ConnectService, type ConnectServiceOptions, } from "./connect-service.js";
+export type { ApiKeyVerdict } from "./connect-flow-state.js";
+export type { ReportFailure } from "./connect-runtime.js";
+export { createMemoryPendingFlowStore, createMemoryTenantStore, type HostedTenantStore, type PendingFlowStore, } from "./hosted-store.js";
 export { confirmExternalOAuthWarning, type ConfirmPromptAdapter, type EnvMap, getAuthMethodHint, getAuthMethodLabel, getOAuthMethodLabel, type LoginWithPromptsOptions, loginWithPrompts, type PromptAdapter, pickAuthMethod, pickModel, pickProvider, } from "./picker.js";
 export { emptyState, FileAuthKitStore, FileSecretStore, globalConfigDir, globalStorage, projectConfigDir, projectStorage, } from "./storage.js";
 export type { ApiKeyCredential, AuthKitOptions, AuthKitState, AuthKitStorage, AuthKitStore, AuthMethod, EnvCredential, ExternalOAuthCredential, ModelDefinition, NoAuthCredential, ProjectStorageOptions, ProviderDefinition, ResolvedSelection, RuntimeAuth, RuntimeExternalOAuth, RuntimePlanUsage, SecretStore, SelectedModel, SelectedModelSnapshot, StoredCredential, } from "./types.js";

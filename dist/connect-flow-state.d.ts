@@ -39,8 +39,8 @@ declare const PendingFlowSchema: z.ZodDiscriminatedUnion<[z.ZodReadonly<z.ZodObj
     kind: z.ZodLiteral<"proxy-account">;
     providerId: z.ZodString;
     stage: z.ZodEnum<{
-        "risk-confirm": "risk-confirm";
         callback: "callback";
+        "risk-confirm": "risk-confirm";
     }>;
     session: z.ZodOptional<z.ZodString>;
     expiresAt: z.ZodNumber;
