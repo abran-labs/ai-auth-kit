@@ -150,7 +150,10 @@ export function parseChatGptCallback(input: string, pending: ChatGptPendingAutho
   if (url.searchParams.get("state") !== pending.state) throw new ChatGptPlanError("callback_invalid", "This address belongs to a different sign-in attempt.");
   const error = url.searchParams.get("error");
   if (error === "access_denied") throw new ChatGptPlanError("access_denied", "ChatGPT access was declined.");
-  if (error) throw new ChatGptPlanError("callback_invalid", `ChatGPT sign-in failed: ${url.searchParams.get("error_description") ?? error}`);
+  if (error) {
+    const detail = url.searchParams.get("error_description") ?? error;
+    throw new ChatGptPlanError("callback_invalid", "ChatGPT sign-in failed. Start again.", { cause: new Error(detail) });
+  }
   const code = url.searchParams.get("code");
   if (!code) throw new ChatGptPlanError("callback_invalid", "The address does not contain an authorization code.");
   const returned = url.searchParams.get("client_id")?.trim();
