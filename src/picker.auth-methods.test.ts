@@ -79,10 +79,10 @@ test("formats human auth labels and hints", () => {
 		"Use existing shell credential",
 	);
 	expect(getAuthMethodLabel(openai, "oauth-external")).toBe(
-		"Use ChatGPT Plus/Pro (browser sign-in)",
+		"Sign in with ChatGPT (use your ChatGPT plan)",
 	);
-	expect(getOAuthComingSoonSubject(openai)).toBe("ChatGPT Plus/Pro sign-in");
-	expect(getAuthMethodHint(openai, "oauth-external")).toBeUndefined();
+	expect(getOAuthComingSoonSubject(openai)).toBe("ChatGPT plan sign-in");
+	expect(getAuthMethodHint(openai, "oauth-external")).toBe("Bill usage to your ChatGPT plan");
 	expect(openai.authMethods).toEqual(["api-key", "oauth-external", "env"]);
 	expect(isCliProxyApiProvider(anthropic)).toBe(true);
 	expect(getAuthMethodLabel(anthropic, "oauth-external")).toBe(
@@ -141,8 +141,8 @@ test("interactive auth methods hide env when shell credential missing", async ()
 			},
 			{
 				value: "oauth-external",
-				label: "Use ChatGPT Plus/Pro (browser sign-in)",
-				hint: undefined,
+				label: "Sign in with ChatGPT (use your ChatGPT plan)",
+				hint: "Bill usage to your ChatGPT plan",
 			},
 		],
 	});

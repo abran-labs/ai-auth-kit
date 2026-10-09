@@ -1,17 +1,34 @@
 import * as prompts from "@clack/prompts";
 import { loginAccountOAuthProvider, type AccountOAuthDeps } from "./account-oauth.js";
+import { loginChatGptPlan, type ChatGptPlanLoginDeps } from "./account-oauth-chatgpt.js";
 import { provisionCliProxyApiForProvider, runCliProxyApiLogin } from "./cliproxyapi.js";
 import {
-	getCliProxyApiLabel,
-	getCliProxyApiWarning,
-	getExternalAuthMetadata,
-	isAccountOAuthProvider,
-	isCliProxyApiProvider
+  getExternalAuthMetadata,
+  isAccountOAuthProvider,
+  isCliProxyApiProvider
 } from "./external-auth.js";
 import type { AuthKit } from "./kit.js";
+import {
+  confirmExternalOAuthWarning,
+  getAuthMethodHint,
+  getAuthMethodLabel,
+  getInteractiveAuthMethods,
+  getOAuthComingSoonSubject,
+  getOAuthMethodLabel,
+  getPresentEnvVars,
+} from "./picker-auth-methods.js";
 import type { AuthMethod, ModelDefinition, ProviderDefinition, StoredCredential } from "./types.js";
 
-type EnvMap = NodeJS.ProcessEnv;
+export {
+  confirmExternalOAuthWarning,
+  getAuthMethodHint,
+  getAuthMethodLabel,
+  getInteractiveAuthMethods,
+  getOAuthComingSoonSubject,
+  getOAuthMethodLabel,
+  getPresentEnvVars,
+} from "./picker-auth-methods.js";
+export type { ConfirmPromptAdapter, EnvMap } from "./picker-auth-methods.js";
 
 export interface PromptAdapter {
   readonly isCancel: typeof prompts.isCancel;
@@ -19,6 +36,7 @@ export interface PromptAdapter {
   readonly select: typeof prompts.select;
   readonly confirm: typeof prompts.confirm;
   readonly password: typeof prompts.password;
+  readonly text?: typeof prompts.text;
   readonly info: (message: string) => void;
 }
 
@@ -26,6 +44,7 @@ export interface LoginWithPromptsOptions {
   readonly provisionCliProxyApi?: (kit: AuthKit, provider: ProviderDefinition) => Promise<string>;
   readonly runCliProxyApiLogin?: (binaryPath: string, provider: ProviderDefinition) => Promise<void>;
   readonly accountOAuthDeps?: AccountOAuthDeps;
+  readonly chatGptPlanDeps?: ChatGptPlanLoginDeps;
 }
 
 const defaultPromptAdapter: PromptAdapter = {
@@ -34,6 +53,7 @@ const defaultPromptAdapter: PromptAdapter = {
   select: prompts.select,
   confirm: prompts.confirm,
   password: prompts.password,
+  text: prompts.text,
   info: (message) => {
     prompts.log.info(message);
   }
@@ -43,111 +63,8 @@ function isCancel(promptAdapter: PromptAdapter, value: unknown): value is symbol
   return promptAdapter.isCancel(value);
 }
 
-export function getOAuthMethodLabel(provider: ProviderDefinition): string {
-	if (isCliProxyApiProvider(provider)) return getCliProxyApiLabel(provider);
-	switch (provider.id) {
-		case "openai":
-			return "Use ChatGPT Plus/Pro (browser sign-in)";
-		case "github-copilot":
-			return "Use GitHub Copilot";
-		default:
-      return "Sign in with provider";
-  }
-}
-
-export function getOAuthComingSoonSubject(provider: ProviderDefinition): string {
-  switch (provider.id) {
-    case "openai":
-      return "ChatGPT Plus/Pro sign-in";
-    case "github-copilot":
-      return "GitHub Copilot sign-in";
-    default:
-      return `${provider.name} sign-in`;
-  }
-}
-
-function getApiKeyMethodLabel(provider: ProviderDefinition): string {
-  switch (provider.id) {
-    case "openai":
-      return "Paste OpenAI API key";
-    case "anthropic":
-      return "Paste Anthropic API key";
-    case "google":
-      return "Paste Gemini API key";
-    case "openrouter":
-      return "Paste OpenRouter API key";
-    default:
-      return "Paste API key";
-  }
-}
-
-function hasEnvValue(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-export function getPresentEnvVars(provider: ProviderDefinition, env: EnvMap = process.env): string[] {
-  return provider.envVars.filter((envVar) => hasEnvValue(env[envVar]));
-}
-
-function getEnvMethodLabel(envVar: string | undefined): string {
-  return envVar ? `Use ${envVar} from shell` : "Use environment variable from shell";
-}
-
-function getEnvMethodHint(presentEnvVars: readonly string[]): string | undefined {
-  if (presentEnvVars.length <= 1) return "Use existing shell credential";
-  return `Choose from ${presentEnvVars.length} shell credentials`;
-}
-
 function getEnvOptionLabel(envVar: string): string {
   return `Use ${envVar} from shell`;
-}
-
-export function getInteractiveAuthMethods(provider: ProviderDefinition, env: EnvMap = process.env): AuthMethod[] {
-  const presentEnvVars = getPresentEnvVars(provider, env);
-  return provider.authMethods.filter((method) => {
-    if (method === "env") return presentEnvVars.length > 0;
-    if (method === "oauth-external") return isCliProxyApiProvider(provider) || isAccountOAuthProvider(provider);
-    return true;
-  });
-}
-
-export function getAuthMethodLabel(provider: ProviderDefinition, method: AuthMethod, env: EnvMap = process.env): string {
-  switch (method) {
-    case "api-key":
-      return getApiKeyMethodLabel(provider);
-    case "env":
-      return getEnvMethodLabel(getPresentEnvVars(provider, env)[0] ?? provider.envVars[0]);
-    case "oauth-external":
-      return getOAuthMethodLabel(provider);
-    case "none":
-      return "No auth needed";
-  }
-}
-
-export function getAuthMethodHint(provider: ProviderDefinition, method: AuthMethod, env: EnvMap = process.env): string | undefined {
-  switch (method) {
-    case "api-key":
-      return "Paste once and store locally";
-    case "env":
-      return getEnvMethodHint(getPresentEnvVars(provider, env));
-    case "oauth-external":
-      return undefined;
-    case "none":
-      return "Use local or unauthenticated access";
-  }
-}
-
-export async function confirmExternalOAuthWarning(
-  provider: ProviderDefinition,
-  promptAdapter: PromptAdapter = defaultPromptAdapter
-): Promise<boolean> {
-  if (!isCliProxyApiProvider(provider)) return true;
-  const accepted = await promptAdapter.confirm({
-    message: getCliProxyApiWarning(provider),
-    initialValue: false
-  });
-  if (isCancel(promptAdapter, accepted)) return false;
-  return accepted;
 }
 
 export async function pickProvider(
@@ -191,7 +108,7 @@ export async function pickModel(
 export async function pickAuthMethod(
   provider: ProviderDefinition,
   promptAdapter: PromptAdapter = defaultPromptAdapter,
-  env: EnvMap = process.env
+  env: NodeJS.ProcessEnv = process.env
 ): Promise<AuthMethod | undefined> {
   const value = await promptAdapter.select({
     message: "Select auth method",
@@ -249,6 +166,12 @@ export async function loginWithPrompts(
   }
 
   if (method === "oauth-external") {
+    if (provider.id === "openai") {
+      // Sign in with ChatGPT is the default account method. The legacy Codex-CLI
+      // flow (loginOpenAiAccount) stays exported for compatibility but is no
+      // longer offered here.
+      return loginChatGptPlan(kit, provider, promptAdapter, options.chatGptPlanDeps);
+    }
     if (isAccountOAuthProvider(provider)) {
       return loginAccountOAuthProvider(kit, provider, promptAdapter, options.accountOAuthDeps);
     }

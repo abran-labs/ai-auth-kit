@@ -22,7 +22,7 @@ type ReadmeProviderClaim = {
 export const README_PROVIDER_CLAIMS = [
   {
     label: "OpenAI",
-    row: "| OpenAI | API key, `OPENAI_API_KEY`, or built-in account OAuth |",
+    row: "| OpenAI | API key, `OPENAI_API_KEY`, or Sign in with ChatGPT (ChatGPT plan) |",
     evidence: ["src/auth-policy-registry.ts"],
   },
   {

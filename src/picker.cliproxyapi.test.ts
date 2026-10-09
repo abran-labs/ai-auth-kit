@@ -91,7 +91,7 @@ test("CLIProxyAPI external auth prompts explicit risk warning before save", asyn
 });
 
 test("confirmed Anthropic CLIProxyAPI auth saves external credential metadata", async () => {
-	const kit = createProjectAuthKit("test-tool", { rootDir: dir });
+	const kit = createProjectAuthKit("test-tool", { rootDir: dir, providers: DEFAULT_PROVIDERS });
 	const provisionCliProxyApi = vi
 		.fn<CliProxyApiProvisioner>()
 		.mockResolvedValue("/tmp/cli-proxy-api");
@@ -137,7 +137,7 @@ test("confirmed Anthropic CLIProxyAPI auth saves external credential metadata", 
 });
 
 test("confirmed Google CLIProxyAPI auth saves external credential metadata", async () => {
-	const kit = createProjectAuthKit("test-tool", { rootDir: dir });
+	const kit = createProjectAuthKit("test-tool", { rootDir: dir, providers: DEFAULT_PROVIDERS });
 	const provisionCliProxyApi = vi
 		.fn<CliProxyApiProvisioner>()
 		.mockResolvedValue("/tmp/cli-proxy-api-google");
