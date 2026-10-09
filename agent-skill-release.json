@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "skill": "ai-auth-kit",
-  "skillVersion": "1.0.0",
+  "skillVersion": "1.1.0",
   "libraryPackage": "@abran-labs/ai-auth-kit",
-  "libraryVersion": "1.0.0",
-  "archive": "ai-auth-kit-skill-1.0.0.tar.gz",
+  "libraryVersion": "1.1.0",
+  "archive": "ai-auth-kit-skill-1.1.0.tar.gz",
   "installer": "install-agent-skill.sh"
 }

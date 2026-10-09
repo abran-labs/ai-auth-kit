@@ -6,10 +6,10 @@
 
 ## Install
 
-Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published.
 
 ```sh
-bun add @abran-labs/ai-auth-kit@1.0.0
+bun add @abran-labs/ai-auth-kit@1.1.0
 ```
 
 ## Install the skill
@@ -17,10 +17,10 @@ bun add @abran-labs/ai-auth-kit@1.0.0
 The optional, version-matched agent skill gives coding agents the library's implementation
 guidance without adding runtime code.
 
-Pending: use this exact command after the agent-skill-v1.0.0 release asset is uploaded.
+Pending: use this exact command after the agent-skill-v1.1.0 release asset is uploaded.
 
 ```sh
-curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh
+curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh
 ```
 
 _On narrow screens, scroll command blocks horizontally._

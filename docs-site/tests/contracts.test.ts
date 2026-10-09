@@ -111,9 +111,9 @@ describe("contract validator", () => {
 
     // Then: concise labels and exact activation/provenance contracts remain
     expect(scopedSource).not.toMatch(/60-second quickstart|Start in 60 seconds/i)
-    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.1.0")
     expect(agentGuide).toContain(
-      "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh",
+      "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh",
     )
     expect(cliProxy).toContain("[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)")
     expect(providers).toContain("only for Anthropic or Google account auth")

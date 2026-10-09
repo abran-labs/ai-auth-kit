@@ -9,7 +9,7 @@ test("Given the canonical manifest, when Bun tooling is inspected, then all stan
 	const bunConfig = await readFile(join(root, "bunfig.toml"), "utf8");
 
 	expect(packageManifest).toContain('"packageManager": "bun@1.3.14"');
-	expect(packageManifest).toContain('"version": "1.0.0"');
+	expect(packageManifest).toContain('"version": "1.1.0"');
 	expect(packageManifest).toContain('"publishConfig": {');
 	expect(packageManifest).toContain('"access": "public"');
 	expect(packageManifest).toContain('"registry": "https://registry.npmjs.org/"');

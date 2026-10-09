@@ -1,4 +1,4 @@
-# Authentication and models — 1.0.0
+# Authentication and models — 1.1.0
 
 ## Provider policy
 

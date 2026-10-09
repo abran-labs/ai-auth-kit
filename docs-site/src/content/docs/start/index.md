@@ -15,7 +15,7 @@ the kit provides provider catalog, local authentication policy, project storage,
 - **Need a working setup now?** Complete the [Quickstart](./quickstart/).
 
 :::note[Library distribution]
-AI Auth Kit is a pure library installed as exact npm version `1.0.0`. It ships no generic
+AI Auth Kit is a pure library installed as exact npm version `1.1.0`. It ships no generic
 executable or global command surface. Host applications own commands and user experience.
 :::
 

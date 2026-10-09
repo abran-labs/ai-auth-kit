@@ -8,7 +8,7 @@ const root = process.cwd();
 test("Given the reviewed local skill release, when the curl installer runs in an isolated home, then it installs one canonical payload and Claude symlink", async () => {
   const home = await mkdtemp(join(tmpdir(), "ai-auth-kit-skill-home-"));
   try {
-    const release = join(root, "release", "agent-skill-v1.0.0");
+    const release = join(root, "release", "agent-skill-v1.1.0");
     const result = Bun.spawn({
       cmd: ["sh", "scripts/install-agent-skill.sh"],
       cwd: root,
@@ -19,7 +19,7 @@ test("Given the reviewed local skill release, when the curl installer runs in an
     const [exitCode, stderr] = await Promise.all([result.exited, new Response(result.stderr).text()]);
 
     expect(exitCode, stderr).toBe(0);
-    expect(await readFile(join(home, ".agents", "skills", "ai-auth-kit", "VERSION"), "utf8")).toBe("1.0.0\n");
+    expect(await readFile(join(home, ".agents", "skills", "ai-auth-kit", "VERSION"), "utf8")).toBe("1.1.0\n");
     expect(await Bun.file(join(home, ".claude", "skills", "ai-auth-kit", "SKILL.md")).exists()).toBeTrue();
     expect(await Bun.file(join(home, ".config", "opencode", "skills", "ai-auth-kit", "SKILL.md")).exists()).toBeFalse();
   } finally {
@@ -33,7 +33,7 @@ test("Given an absent canonical target and a user-owned Claude target, when inst
     const claudeTarget = join(home, ".claude", "skills", "ai-auth-kit");
     await mkdir(claudeTarget, { recursive: true });
     await writeFile(join(claudeTarget, "owner-note.txt"), "preserve me\n");
-    const release = join(root, "release", "agent-skill-v1.0.0");
+    const release = join(root, "release", "agent-skill-v1.1.0");
     const result = Bun.spawn({
       cmd: ["sh", "scripts/install-agent-skill.sh"],
       cwd: root,

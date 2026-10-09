@@ -1,4 +1,4 @@
-# Public API — 1.0.0
+# Public API — 1.1.0
 
 Import only from `@abran-labs/ai-auth-kit`. Internal file paths are not compatibility surfaces.
 

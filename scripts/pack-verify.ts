@@ -59,7 +59,7 @@ const packageSchema = z.object({
   files: z.array(z.string()),
   publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
   scripts: z.record(z.string(), z.string()),
-  version: z.literal("1.0.0"),
+  version: z.literal("1.1.0"),
 });
 
 export type PackVerification = {
@@ -193,7 +193,7 @@ export async function verifyPack(root: string): Promise<PackVerification> {
   const catalog = await validateGeneratedCatalog(root, true);
   const evidence = join(root, EVIDENCE_DIRECTORY);
   await mkdir(evidence, { recursive: true });
-  const tarball = join(evidence, "abran-labs-ai-auth-kit-1.0.0.tgz");
+  const tarball = join(evidence, "abran-labs-ai-auth-kit-1.1.0.tgz");
   await rm(tarball, { force: true });
   const dryRun = await run(["bun", "pm", "pack", "--dry-run", "--ignore-scripts"], root);
   await run(["bun", "pm", "pack", "--ignore-scripts", "--destination", evidence], root);

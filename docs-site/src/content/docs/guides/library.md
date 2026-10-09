@@ -6,10 +6,10 @@ description: Create an AuthKit instance, save credentials, select a model, and r
 The exact command is reserved for npm publication. Internal source paths are not compatibility
 surfaces.
 
-Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published.
 
 ```sh
-bun add @abran-labs/ai-auth-kit@1.0.0
+bun add @abran-labs/ai-auth-kit@1.1.0
 ```
 
 ## Create a project kit

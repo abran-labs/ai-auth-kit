@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Prepare the exact AI Auth Kit 1.0.0 command and verify root library access after publication.
+description: Prepare the exact AI Auth Kit 1.1.0 command and verify root library access after publication.
 ---
 
 ## Prerequisites
@@ -10,12 +10,12 @@ description: Prepare the exact AI Auth Kit 1.0.0 command and verify root library
 
 *Scroll command blocks sideways when their full contents extend past the reading column.*
 
-## Step 1 — Add exact version 1.0.0
+## Step 1 — Add exact version 1.1.0
 
-Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published.
 
 ```sh
-bun add @abran-labs/ai-auth-kit@1.0.0
+bun add @abran-labs/ai-auth-kit@1.1.0
 ```
 
 After publication, commit the resulting `bun.lock`. Use `bun install --frozen-lockfile` in CI so

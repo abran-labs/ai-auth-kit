@@ -86,7 +86,7 @@ describe("template contract", () => {
     expect(landing).toContain('localStorage.getItem("starlight-theme")')
     expect(landing).toContain('class="skip-link"')
     expect(appearance).toContain('aria-label="Appearance: System"')
-    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.1.0")
     expect(landing).not.toContain("--exact \\")
   })
 
@@ -101,7 +101,7 @@ describe("template contract", () => {
     // Then: the page exposes both install routes, Quickstart, linked credit, and no native select
     expect(landing).toContain("Provider authentication and model selection for host tools")
     expect(landing).toContain("EXACT_README_PROMISE")
-    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.1.0")
     expect(landing).toContain("install-agent-skill.sh | sh")
     expect(landing).toContain(">Quickstart</a>")
     expect(landing).not.toContain("60-second quickstart")
@@ -161,8 +161,8 @@ describe("template contract", () => {
 
     // When: their commands are inspected
     // Then: each surface uses the exact version-pinned npm command
-    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
-    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(landing).toContain("bun add @abran-labs/ai-auth-kit@1.1.0")
+    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.1.0")
     expect(`${landing}\n${quickstart}`).not.toContain("github:abran-labs/ai-auth-kit#")
   })
 

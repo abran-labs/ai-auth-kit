@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-const releaseVersion = "1.0.0";
+const releaseVersion = "1.1.0";
 const skillRoot = "skills/ai-auth-kit";
 const releaseRoot = `release/agent-skill-v${releaseVersion}`;
 const archiveName = `ai-auth-kit-skill-${releaseVersion}.tar.gz`;

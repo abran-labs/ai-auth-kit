@@ -11,7 +11,7 @@ compatibility: Claude Code, OpenCode, Codex
 
 # AI Auth Kit
 
-Library version: exactly 1.0.0. Skill version: exactly 1.0.0.
+Library version: exactly 1.1.0. Skill version: exactly 1.1.0.
 
 ## Mandatory first action
 
@@ -21,15 +21,15 @@ Before guidance, code edits, or commands, run once per agent session from host p
 node "${HOME}/.agents/skills/ai-auth-kit/scripts/check-library-version.mjs" --project-dir "$PWD"
 ```
 
-This local checker must report `detected=1.0.0` and `expected=1.0.0`. Do not continue after a
+This local checker must report `detected=1.1.0` and `expected=1.1.0`. Do not continue after a
 missing package, mismatch, or checker failure. Report its `path`, `detected`, `expected`, and
 `upgrade` fields exactly. Never update silently. User runs the remediation:
 
 The npm endpoint currently returns 404.
-Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published.
 
 ```sh
-bun add @abran-labs/ai-auth-kit@1.0.0
+bun add @abran-labs/ai-auth-kit@1.1.0
 ```
 
 No portable skill-load hook exists across Claude Code, OpenCode, and Codex. This explicit first
@@ -57,9 +57,9 @@ documentation; never replace the bundled API/security guidance with a generic do
 - AI Auth Kit is a library, not a generic command-line product. Never invent a global
   `ai-auth-kit` executable or generic command syntax.
 - The npm endpoint currently returns 404.
-  Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published.
+  Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published.
   After publication, install exact package only:
-  `bun add @abran-labs/ai-auth-kit@1.0.0`. Never recommend `latest`, ranges, Git dependencies,
+  `bun add @abran-labs/ai-auth-kit@1.1.0`. Never recommend `latest`, ranges, Git dependencies,
   copied source, or internal imports.
 - Package supplies runtime behavior. This skill supplies implementation knowledge to coding
   agents. Installing either does not install the other.

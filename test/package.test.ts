@@ -15,17 +15,17 @@ const packageManifestSchema = z.object({
   publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
   repository: z.object({ type: z.string(), url: z.string() }),
   scripts: z.record(z.string(), z.string()),
-  version: z.literal("1.0.0"),
+  version: z.literal("1.1.0"),
 });
 
-test("Given the canonical manifest, when package entry points are inspected, then consumers receive a public 1.0.0 root-only library without an executable bin", async () => {
+test("Given the canonical manifest, when package entry points are inspected, then consumers receive a public 1.1.0 root-only library without an executable bin", async () => {
   const manifest = packageManifestSchema.parse(JSON.parse(await readFile(join(root, "package.json"), "utf8")));
 
   expect(manifest.exports["."].bun).toBe("./src/index.ts");
   expect(manifest.exports["."].import).toBe("./dist/index.js");
   expect(manifest.exports["."].types).toBe("./dist/index.d.ts");
   expect(manifest.publishConfig).toEqual({ access: "public", registry: "https://registry.npmjs.org/" });
-  expect(manifest.version).toBe("1.0.0");
+  expect(manifest.version).toBe("1.1.0");
   expect(manifest.bin).toBeUndefined();
   expect(manifest.files).toEqual([
     "dist",
@@ -173,9 +173,9 @@ test("Given tracked distribution files, when source is rebuilt in a temporary di
   expect(result.files).toBeGreaterThan(0);
 }, 20_000);
 
-test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins exact public npm version 1.0.0", async () => {
+test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins exact public npm version 1.1.0", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
-  expect(readme).toContain("bun add @abran-labs/ai-auth-kit@1.0.0");
+  expect(readme).toContain("bun add @abran-labs/ai-auth-kit@1.1.0");
   expect(readme).not.toContain("github:abran-labs/ai-auth-kit#");
   expect(readme).not.toMatch(/@abran-labs\/ai-auth-kit@(?:latest|\^|~|>=)/);
 });

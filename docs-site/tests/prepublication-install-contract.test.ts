@@ -2,13 +2,13 @@ import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 
 const repositoryRoot = resolve(import.meta.dir, "../..")
-const libraryCommand = "bun add @abran-labs/ai-auth-kit@1.0.0"
+const libraryCommand = "bun add @abran-labs/ai-auth-kit@1.1.0"
 const skillCommand =
-  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh"
+  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh"
 const libraryPending =
-  "Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published."
+  "Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published."
 const skillPending =
-  "Pending: use this exact command after the agent-skill-v1.0.0 release asset is uploaded."
+  "Pending: use this exact command after the agent-skill-v1.1.0 release asset is uploaded."
 const npmUnavailable = "The npm endpoint currently returns 404."
 const publicSurfaces = [
   { path: "README.md", libraryCount: 1, skillCount: 1 },
@@ -90,9 +90,9 @@ describe("prepublication install contract", () => {
   test("keeps pending labels while both publication endpoints are unavailable", async () => {
     // Given: the exact npm version and skill-installer publication endpoints
     const [npmResponse, skillResponse] = await Promise.all([
-      fetch("https://registry.npmjs.org/@abran-labs%2Fai-auth-kit/1.0.0"),
+      fetch("https://registry.npmjs.org/@abran-labs%2Fai-auth-kit/1.1.0"),
       fetch(
-        "https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh",
+        "https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh",
         { redirect: "follow" },
       ),
     ])

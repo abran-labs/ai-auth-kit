@@ -8,7 +8,7 @@ guilds) from one server process: each tenant connects its own provider credentia
 dashboard, and the host resolves per-tenant runtime auth for inference.
 
 ```sh
-bun add @abran-labs/ai-auth-kit@1.0.0
+bun add @abran-labs/ai-auth-kit@1.1.0
 ```
 
 ## Create the service
