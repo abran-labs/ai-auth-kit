@@ -3,6 +3,7 @@ type RemovalDependencies = {
     readonly secrets: SecretStore;
     readonly state: AuthKitState;
     readonly store: AuthKitStore;
+    readonly onStateCommitted?: () => void;
 };
 export declare class CredentialRemovalError extends Error {
     readonly name = "CredentialRemovalError";

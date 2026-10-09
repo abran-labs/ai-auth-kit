@@ -19,6 +19,7 @@ async function resolveChatGptPlanAuth(context, credential) {
         credential,
         secrets: context.secrets,
         save: context.updateCredential,
+        ...(context.readCurrent === undefined ? {} : { readCurrent: context.readCurrent }),
     });
     if (access.kind === "reconnect-required") {
         return {

@@ -1,4 +1,4 @@
-import type { ConnectModel, ConnectProvider, ConnectResponse, ConnectStatus, ConnectStep, Connection } from "../connect-protocol.js";
+import type { ConnectModel, ConnectNotice, ConnectProvider, ConnectResponse, ConnectStatus, ConnectStep, Connection } from "../connect-protocol.js";
 export type ConnectPhase = "loading" | "idle" | "method" | "step" | "models";
 export interface ConnectState {
     readonly error?: string;
@@ -6,6 +6,7 @@ export interface ConnectState {
     readonly modelFilter: string;
     readonly models: readonly ConnectModel[];
     readonly modelsProviderId?: string;
+    readonly notice?: ConnectNotice;
     readonly phase: ConnectPhase;
     readonly provider?: ConnectProvider;
     readonly providers: readonly ConnectProvider[];
@@ -66,6 +67,8 @@ export type ConnectAction = {
     readonly kind: "model-selected";
 } | {
     readonly kind: "disconnected";
+    readonly status: ConnectStatus;
+    readonly notice?: ConnectNotice;
 } | {
     readonly kind: "clear-error";
 };

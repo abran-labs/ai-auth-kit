@@ -34,6 +34,7 @@ declare const PendingFlowSchema: z.ZodDiscriminatedUnion<[z.ZodReadonly<z.ZodObj
         hostId: z.ZodString;
         expiresAt: z.ZodNumber;
     }, z.core.$strip>>;
+    expectedSubject: z.ZodOptional<z.ZodString>;
     expiresAt: z.ZodNumber;
 }, z.core.$strip>>, z.ZodReadonly<z.ZodObject<{
     kind: z.ZodLiteral<"proxy-account">;

@@ -1,10 +1,13 @@
 import { createServer } from "node:http";
 import { CHATGPT_CALLBACK_PATH, ChatGptPlanError, parseChatGptCallback } from "./chatgpt-plan.js";
 const BIND_HOST = "127.0.0.1";
+function escapeHtml(value) {
+    return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 function send(response, status, title, body) {
     response.statusCode = status;
     response.setHeader("Content-Type", "text/html; charset=utf-8");
-    response.end(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1><p>${body}</p></body></html>`);
+    response.end(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head><body><h1>${escapeHtml(title)}</h1><p>${escapeHtml(body)}</p></body></html>`);
 }
 function boundPort(server) {
     const address = server.address();

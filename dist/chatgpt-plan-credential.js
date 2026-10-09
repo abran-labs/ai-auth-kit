@@ -15,6 +15,7 @@ export const ChatGptPlanMetadataSchema = z.object({
     scopes: z.string(),
     baseUrl: z.literal(CHATGPT_PLAN_RESOURCE),
     health: z.literal("reconnect-required").optional(),
+    planUsage: z.literal("disabled").optional(),
 }).readonly();
 export function chatGptPlanSecretRefs(providerId) {
     return {
@@ -38,5 +39,20 @@ export function chatGptPlanMetadata(signIn, refs) {
 export function parseChatGptPlanMetadata(metadata) {
     const parsed = ChatGptPlanMetadataSchema.safeParse(metadata);
     return parsed.success ? parsed.data : undefined;
+}
+export function chatGptPlanDisabledMetadata(registration) {
+    const metadata = {
+        adapter: CHATGPT_PLAN_ADAPTER,
+        clientId: registration.clientId,
+        subject: registration.subject,
+        expiresAt: String(registration.now),
+        scopes: registration.grantedScopes,
+        baseUrl: CHATGPT_PLAN_RESOURCE,
+        health: "reconnect-required",
+        planUsage: "disabled",
+    };
+    if (registration.email !== undefined)
+        metadata.email = registration.email;
+    return metadata;
 }
 //# sourceMappingURL=chatgpt-plan-credential.js.map
