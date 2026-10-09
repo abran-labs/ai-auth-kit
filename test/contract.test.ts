@@ -100,6 +100,7 @@ test("Given the public root, when enumerated, then it exposes the frozen runtime
     "createCliProxyAccountConnector",
     "createCliProxyManagementClient",
     "createConnectService",
+    "createMemoryLoginSlot",
     "createMemoryPendingFlowStore",
     "createMemoryTenantStore",
     "createProjectAuthKit",
