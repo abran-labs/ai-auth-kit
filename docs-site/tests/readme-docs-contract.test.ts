@@ -17,7 +17,7 @@ const factualOllamaRow =
   "| Ollama compatibility entry | No auth, or environment auth via `OLLAMA_API_KEY`; no API-key method |"
 const legacyOllamaRow = "| Ollama compatibility entry | No auth or `OLLAMA_API_KEY` |"
 const providerRows = [
-  "| OpenAI | API key, `OPENAI_API_KEY`, or built-in account OAuth |",
+  "| OpenAI | API key, `OPENAI_API_KEY`, or Sign in with ChatGPT (ChatGPT plan) |",
   "| GitHub Copilot | `GITHUB_TOKEN`, `GH_TOKEN`, or `COPILOT_GITHUB_TOKEN`, plus built-in account OAuth |",
   "| Anthropic | API key, `ANTHROPIC_API_KEY`, or optional CLIProxyAPI account auth |",
   "| Google | API key, supported Gemini/Google environment variables, or optional CLIProxyAPI account auth |",
