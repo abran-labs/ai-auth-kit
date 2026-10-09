@@ -32,6 +32,7 @@ export default defineConfig({
             { label: "Storage and privacy", link: "/guides/storage-privacy/" },
             { label: "Models.dev", link: "/guides/models-dev/" },
             { label: "CLIProxyAPI", link: "/guides/cliproxy/" },
+            { label: "Hosted mode", link: "/guides/hosted/" },
             { label: "Agent skill", link: "/guides/agent-skill/" },
           ],
         },

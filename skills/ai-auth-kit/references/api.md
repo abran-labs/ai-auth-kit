@@ -18,8 +18,10 @@ Import only from `@abran-labs/ai-auth-kit`. Internal file paths are not compatib
   `getExternalAuthMetadata`, `isAccountOAuthProvider`, `isCliProxyApiProvider`,
   `isExternalOAuthProvider`.
 - Kit: `AuthKit`, `createAuthKit`, `createProjectAuthKit`.
-- Picker: `confirmExternalOAuthWarning`, `ConfirmPromptAdapter`, `EnvMap`,
-  `getAuthMethodHint`, `getAuthMethodLabel`,
+- Hosted connect: `createConnectService`, `ConnectService`, `ConnectServiceOptions`,
+  `ChatGptPlanHostOptions`, `ApiKeyVerdict`, `ReportFailure`, `HostedTenantStore`,
+  `PendingFlowStore`, `createMemoryTenantStore`, `createMemoryPendingFlowStore`.
+- Picker: `confirmExternalOAuthWarning`, `ConfirmPromptAdapter`, `EnvMap`, `getAuthMethodHint`, `getAuthMethodLabel`,
   `getOAuthMethodLabel`, `LoginWithPromptsOptions`, `loginWithPrompts`, `PromptAdapter`,
   `pickAuthMethod`, `pickModel`, `pickProvider`.
 - ChatGPT plan: `CHATGPT_AUTHORIZE_URL`, `CHATGPT_TOKEN_URL`, `CHATGPT_REVOKE_URL`,
@@ -62,7 +64,6 @@ globalStorage(appName?: string): AuthKitStorage;
 optional provider/catalog configuration.
 
 ## `AuthKit`
-
 | Method | Contract |
 | --- | --- |
 | `ready()` | Refresh managed catalog; return `CatalogStatus` when present. |
@@ -81,6 +82,20 @@ optional provider/catalog configuration.
 | `getSelectedModel()` | Return saved model state. |
 | `resolveSelection()` | Resolve live entry, else valid saved snapshot. |
 | `runtimeAuth(providerId)` | Resolve provider-scoped env/external auth; does not send requests. |
+
+## Hosted connect
+
+```ts
+createConnectService(options: ConnectServiceOptions): ConnectService;
+```
+
+`handle(tenantId, request)` speaks the browser connect protocol (`providers`, `status`, `start`,
+`submit`, `poll`, `cancel`, `models`, `select-model`, `disconnect`) and never throws for expected
+failures. `runtime(tenantId)` resolves the tenant selection into wire details for inference.
+`reportFailure(tenantId, failure)` marks health (`auth_revoked`, `plan_limit`, `not_eligible`).
+`dispose()` stops shared catalog refresh. Hosts supply `HostedTenantStore` (isolated storage per
+tenant) and `PendingFlowStore` (durable short-lived flows); memory fakes cover tests. API-key
+methods are offered only for reviewed base URLs; ChatGPT plan needs `chatGptPlan.enabled`.
 
 ## Picker exports
 

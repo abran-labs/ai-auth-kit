@@ -94,6 +94,20 @@ export {
 } from "./external-auth.js";
 export { AuthKit, createAuthKit, createProjectAuthKit } from "./kit.js";
 export {
+  createConnectService,
+  type ChatGptPlanHostOptions,
+  type ConnectService,
+  type ConnectServiceOptions,
+} from "./connect-service.js";
+export type { ApiKeyVerdict } from "./connect-flow-state.js";
+export type { ReportFailure } from "./connect-runtime.js";
+export {
+  createMemoryPendingFlowStore,
+  createMemoryTenantStore,
+  type HostedTenantStore,
+  type PendingFlowStore,
+} from "./hosted-store.js";
+export {
 	confirmExternalOAuthWarning,
 	type ConfirmPromptAdapter,
 	type EnvMap,
