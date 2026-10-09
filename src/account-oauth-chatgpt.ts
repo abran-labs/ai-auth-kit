@@ -51,6 +51,7 @@ function messageFor(error: ChatGptPlanError): string {
     case "invalid_client": return "ChatGPT rejected this app registration. Sign in again. No credential was saved.";
     case "reconnect_required": return "The ChatGPT connection ended. Sign in again. No credential was saved.";
     case "id_token_invalid": return `ChatGPT identity could not be verified. ${error.message} No credential was saved.`;
+    case "identity_mismatch": return `${error.message} No credential was saved.`;
     case "upstream_unavailable": return `ChatGPT sign-in is unavailable. ${error.message} No credential was saved.`;
     case "callback_invalid": return `${error.message} No credential was saved.`;
   }
@@ -146,6 +147,9 @@ export async function loginChatGptPlan(
       fetch: deps.fetch ?? globalThis.fetch,
       now: deps.now?.() ?? Date.now(),
     });
+    if (reauth !== undefined && signIn.identity.subject !== reauth.subject) {
+      throw new ChatGptPlanError("identity_mismatch", "This ChatGPT sign-in belongs to a different account than the saved one. Sign in with the saved account, or sign out and start fresh.");
+    }
     const refs = chatGptPlanSecretRefs(provider.id);
     return kit.saveExternalOAuth(provider.id, chatGptPlanMetadata(signIn, refs), [
       [refs.accessTokenRef, signIn.accessToken],

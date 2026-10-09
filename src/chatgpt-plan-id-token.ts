@@ -14,6 +14,7 @@ export type ChatGptPlanErrorCode =
   | "access_denied"
   | "plan_not_granted"
   | "id_token_invalid"
+  | "identity_mismatch"
   | "invalid_client"
   | "reconnect_required"
   | "upstream_unavailable";

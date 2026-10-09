@@ -15,10 +15,10 @@ const jwk = publicKey.export({ format: "jwk" });
 
 export type TokenReply = { readonly status: number; readonly body: unknown };
 
-export function idToken(nonce: string): string {
+export function idToken(nonce: string, sub = "user-sub"): string {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: "RS256", kid: "test-key" })).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ iss: CHATGPT_ISSUER, sub: "user-sub", aud: ISSUED, exp: nowSeconds + 3600, iat: nowSeconds, nonce, email: "dev@example.com" })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ iss: CHATGPT_ISSUER, sub, aud: ISSUED, exp: nowSeconds + 3600, iat: nowSeconds, nonce, email: "dev@example.com" })).toString("base64url");
   return `${header}.${payload}.${sign("RSA-SHA256", Buffer.from(`${header}.${payload}`), privateKey).toString("base64url")}`;
 }
 
@@ -66,8 +66,8 @@ export function callbackWith(authorizationUrl: string, callbackPrefix: string, p
   return url.toString();
 }
 
-export function planTokenReply(nonce: string, scope: string = PLAN_SCOPES): TokenReply {
-  return { status: 200, body: { access_token: "plan-at", refresh_token: "plan-rt", id_token: idToken(nonce), expires_in: 3600, scope } };
+export function planTokenReply(nonce: string, scope: string = PLAN_SCOPES, sub = "user-sub"): TokenReply {
+  return { status: 200, body: { access_token: "plan-at", refresh_token: "plan-rt", id_token: idToken(nonce, sub), expires_in: 3600, scope } };
 }
 
 export function setupConnectService(options: {

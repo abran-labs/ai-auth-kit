@@ -21,11 +21,11 @@ export interface ChatGptTestCaptured {
   authorizationUrl?: string;
 }
 
-export function mintIdToken(nonce: string, clientId: string): string {
+export function mintIdToken(nonce: string, clientId: string, sub = "user-sub"): string {
   const header = Buffer.from(JSON.stringify({ alg: "RS256", kid: KID })).toString("base64url");
   const payload = Buffer.from(JSON.stringify({
     iss: CHATGPT_ISSUER,
-    sub: "user-sub",
+    sub,
     aud: clientId,
     exp: NOW / 1000 + 3600,
     iat: NOW / 1000,
@@ -36,7 +36,7 @@ export function mintIdToken(nonce: string, clientId: string): string {
   return `${header}.${payload}.${signature}`;
 }
 
-export function createFakeOpenAi(captured: ChatGptTestCaptured, scopes: string = PLAN_SCOPES, issued: string = ISSUED): {
+export function createFakeOpenAi(captured: ChatGptTestCaptured, scopes: string = PLAN_SCOPES, issued: string = ISSUED, sub = "user-sub"): {
   readonly fetch: AuthFetch;
   readonly calls: { readonly url: string; readonly form: URLSearchParams }[];
 } {
@@ -55,7 +55,7 @@ export function createFakeOpenAi(captured: ChatGptTestCaptured, scopes: string =
     return Response.json({
       access_token: "access-1",
       refresh_token: "refresh-1",
-      id_token: mintIdToken(captured.nonce ?? "", issued),
+      id_token: mintIdToken(captured.nonce ?? "", issued, sub),
       expires_in: 3600,
       scope: scopes,
     });

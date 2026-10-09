@@ -44,7 +44,7 @@ export async function startFlow(context: ConnectFlowContext, tenantId: string, p
       await context.pendingFlows.put(
         flowId,
         tenantId,
-        JSON.stringify({ kind: "chatgpt-plan", providerId: provider.id, authorization: authorization.pending, expiresAt }),
+        JSON.stringify({ kind: "chatgpt-plan", providerId: provider.id, authorization: authorization.pending, ...(fresh || savedMetadata?.subject === undefined ? {} : { expectedSubject: savedMetadata.subject }), expiresAt }),
         expiresAt,
       );
       return {
@@ -133,6 +133,9 @@ async function submitChatGpt(context: ConnectFlowContext, tenantId: string, flow
     ...(context.fetch === undefined ? {} : { fetch: context.fetch }),
     now,
   });
+  if (pending.expectedSubject !== undefined && signIn.identity.subject !== pending.expectedSubject) {
+    throw new ConnectError("identity_mismatch", "This ChatGPT sign-in belongs to a different account than the saved one. Sign in with the saved account or disconnect and start fresh.", false);
+  }
   const kit = context.kitFor(tenantId);
   const refs = chatGptPlanSecretRefs(pending.providerId);
   const stored: Record<string, string> = { ...chatGptPlanMetadata(signIn, refs) };

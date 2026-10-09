@@ -127,6 +127,7 @@ export const ConnectErrorCodeSchema = z.enum([
   "plan_not_granted",
   "credential_rejected",
   "account_in_use",
+  "identity_mismatch",
   "not_connected",
   "unknown_model",
   "upstream_unavailable",
