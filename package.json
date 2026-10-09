@@ -49,6 +49,7 @@
     "src/chatgpt-plan-id-token.ts",
     "src/chatgpt-plan-loopback.ts",
     "src/chatgpt-plan-models.ts",
+    "src/chatgpt-plan-scope.ts",
     "src/chatgpt-plan-refresh.ts",
     "src/chatgpt-plan.ts",
     "src/cliproxyapi-archive.ts",

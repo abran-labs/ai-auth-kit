@@ -1,9 +1,11 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { CHATGPT_ISSUER, ChatGptPlanError, type ChatGptIdentity, verifyChatGptIdToken } from "./chatgpt-plan-id-token.js";
+import { planNotGrantedError, splitPlanTokens } from "./chatgpt-plan-scope.js";
 import type { AuthFetch } from "./types.js";
 
 export { CHATGPT_ISSUER, ChatGptPlanError, type ChatGptIdentity, type ChatGptPlanErrorCode } from "./chatgpt-plan-id-token.js";
+export { planNotGrantedCause, type ChatGptPlanNotGrantedCause } from "./chatgpt-plan-scope.js";
 
 export const CHATGPT_AUTHORIZE_URL = `${CHATGPT_ISSUER}/api/accounts/authorize`;
 export const CHATGPT_TOKEN_URL = `${CHATGPT_ISSUER}/api/accounts/oauth/token`;
@@ -202,40 +204,6 @@ async function readTokens(response: Response, refreshing: boolean): Promise<z.ou
   return parsed.data;
 }
 
-const PlanNotGrantedCauseSchema = z.object({
-  clientId: z.string().min(1),
-  subject: z.string().min(1).optional(),
-  email: z.string().min(1).optional(),
-  grantedScopes: z.string(),
-  tokens: z.object({
-    accessToken: z.string().min(1),
-    refreshToken: z.string().min(1),
-    expiresAt: z.number(),
-    scopes: z.array(z.string()).readonly(),
-    clientId: z.string().min(1),
-  }).optional(),
-}).readonly();
-
-export type ChatGptPlanNotGrantedCause = z.output<typeof PlanNotGrantedCauseSchema>;
-
-export function planNotGrantedCause(error: unknown): ChatGptPlanNotGrantedCause | undefined {
-  if (!(error instanceof ChatGptPlanError) || error.code !== "plan_not_granted") return undefined;
-  const parsed = PlanNotGrantedCauseSchema.safeParse(error.cause);
-  return parsed.success ? parsed.data : undefined;
-}
-
-function splitTokens(body: z.output<typeof TokenResponseSchema>, clientId: string, now: number): { readonly tokens: ChatGptPlanTokens; readonly planGranted: boolean; readonly grantedScopes: string } {
-  const scopes = body.scope.split(/\s+/).filter(Boolean);
-  const tokens: ChatGptPlanTokens = { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: now + body.expires_in * 1000, scopes, clientId };
-  return { tokens, planGranted: scopes.includes(CHATGPT_PLAN_SCOPE), grantedScopes: scopes.join(" ") };
-}
-
-function planNotGranted(clientId: string, grantedScopes: string, detail: Omit<ChatGptPlanNotGrantedCause, "clientId" | "grantedScopes">): ChatGptPlanError {
-  return new ChatGptPlanError("plan_not_granted", "ChatGPT plan usage was not allowed. Sign in again and allow plan usage, or use an API key.", {
-    cause: { clientId, grantedScopes, ...detail },
-  });
-}
-
 export async function exchangeChatGptCode(input: ChatGptExchangeInput): Promise<ChatGptSignIn> {
   const fetchImpl = input.fetch ?? globalThis.fetch;
   const response = await postForm(CHATGPT_TOKEN_URL, {
@@ -250,9 +218,9 @@ export async function exchangeChatGptCode(input: ChatGptExchangeInput): Promise<
   if (body.id_token === undefined) throw new ChatGptPlanError("id_token_invalid", "ChatGPT did not return an ID token.");
   const now = input.now ?? Date.now();
   const identity = await verifyChatGptIdToken(body.id_token, { clientId: input.clientId, nonce: input.pending.nonce, fetch: fetchImpl, now });
-  const split = splitTokens(body, input.clientId, now);
+  const split = splitPlanTokens(body, input.clientId, now);
   if (!split.planGranted) {
-    throw planNotGranted(input.clientId, split.grantedScopes, {
+    throw planNotGrantedError(input.clientId, split.grantedScopes, {
       subject: identity.subject,
       ...(identity.email === undefined ? {} : { email: identity.email }),
     });
@@ -268,8 +236,8 @@ export async function refreshChatGptTokens(input: ChatGptRefreshInput): Promise<
     refresh_token: input.refreshToken,
     resource: CHATGPT_PLAN_RESOURCE,
   }, input.fetch ?? globalThis.fetch);
-  const split = splitTokens(await readTokens(response, true), input.clientId, now);
-  if (!split.planGranted) throw planNotGranted(input.clientId, split.grantedScopes, { tokens: split.tokens });
+  const split = splitPlanTokens(await readTokens(response, true), input.clientId, now);
+  if (!split.planGranted) throw planNotGrantedError(input.clientId, split.grantedScopes, { tokens: split.tokens });
   return split.tokens;
 }
 

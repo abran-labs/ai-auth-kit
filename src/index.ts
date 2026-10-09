@@ -33,7 +33,6 @@ export {
   type ChatGptPendingAuthorization,
   ChatGptPlanError,
   type ChatGptPlanErrorCode,
-  type ChatGptPlanNotGrantedCause,
   type ChatGptPlanTokens,
   type ChatGptRefreshInput,
   type ChatGptSignIn,
@@ -41,11 +40,14 @@ export {
   exchangeChatGptCode,
   isChatGptHostId,
   parseChatGptCallback,
-  planNotGrantedCause,
   refreshChatGptTokens,
   revokeChatGptSession,
   startChatGptAuthorization,
 } from "./chatgpt-plan.js";
+export {
+  type ChatGptPlanNotGrantedCause,
+  planNotGrantedCause,
+} from "./chatgpt-plan-scope.js";
 export {
   CHATGPT_JWKS_URL,
   type ChatGptIdTokenCheck,
