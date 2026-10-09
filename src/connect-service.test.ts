@@ -163,7 +163,7 @@ test("Given bad requests, when handled, then invalid, unknown, and unavailable c
 });
 
 test("Given an expired flow, when submitted, then flow_expired is reported and the flow is gone", async () => {
-  let now = 1_000_000;
+  let now = Date.now();
   const { service, pendingFlows } = setup({ now: () => now });
   const started = stepOf(await service.handle("guild-a", { op: "start", providerId: "openai", method: "api-key" }));
   if (started.kind !== "secret-input") throw new Error("Expected secret-input");

@@ -36,8 +36,8 @@ test("Given a pending flow store, when a flow is taken, then the read is one-tim
 test("Given a pending flow store, when tenants share a flow id, then values stay isolated", async () => {
   const flows = createMemoryPendingFlowStore();
 
-  await flows.put("shared", "guild-a", "value-a", 1);
-  await flows.put("shared", "guild-b", "value-b", 2);
+  await flows.put("shared", "guild-a", "value-a", Date.now() + 600_000);
+  await flows.put("shared", "guild-b", "value-b", Date.now() + 600_000);
   expect(await flows.peek("shared", "guild-a")).toBe("value-a");
   await flows.delete("shared", "guild-a");
   expect(await flows.peek("shared", "guild-a")).toBeUndefined();
@@ -47,7 +47,7 @@ test("Given a pending flow store, when tenants share a flow id, then values stay
 test("Given a pending flow store, when a value is overwritten, then the latest value wins", async () => {
   const flows = createMemoryPendingFlowStore();
 
-  await flows.put("flow-1", "guild-a", "first", 1);
-  await flows.put("flow-1", "guild-a", "second", 2);
+  await flows.put("flow-1", "guild-a", "first", Date.now() + 600_000);
+  await flows.put("flow-1", "guild-a", "second", Date.now() + 600_000);
   expect(await flows.take("flow-1", "guild-a")).toBe("second");
 });
