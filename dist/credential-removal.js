@@ -6,12 +6,17 @@ function refsFor(credential) {
     if (credential.type === "api-key")
         return [credential.secretRef];
     if (credential.type === "oauth-external")
-        return [credential.metadata.accessTokenRef, credential.metadata.refreshTokenRef]
+        return [credential.metadata.accessTokenRef, credential.metadata.refreshTokenRef, credential.metadata.idTokenRef]
             .filter((ref) => typeof ref === "string" && ref.length > 0);
     return [];
 }
+export const HOST_SECRET_REF_PREFIX = "host:";
+export const CHATGPT_HOST_ID_REF = `${HOST_SECRET_REF_PREFIX}chatgpt:ext-agent-host-id`;
+export function isHostSecretRef(ref) {
+    return ref.startsWith(HOST_SECRET_REF_PREFIX);
+}
 export function liveSecretRefs(state) {
-    return [...new Set(Object.values(state.credentials).flatMap(refsFor))];
+    return [...new Set([...Object.values(state.credentials).flatMap(refsFor), CHATGPT_HOST_ID_REF])];
 }
 function removedState(state, providerId) {
     const credentials = { ...state.credentials };
