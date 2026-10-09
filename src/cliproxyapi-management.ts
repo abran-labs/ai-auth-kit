@@ -48,6 +48,12 @@ export interface CliProxyCredentialFile {
   readonly disabled: boolean;
   readonly unavailable?: boolean;
   readonly email?: string;
+  readonly createdAt?: string;
+  readonly updatedAt?: string;
+}
+
+export interface CliProxyCredentialDownload {
+  readonly prefix?: string;
 }
 
 export interface CliProxyCredentialModel {
@@ -60,51 +66,34 @@ export interface CliProxyCredentialModel {
 const MAX_RESPONSE_BYTES = 1_048_576;
 const DEFAULT_TIMEOUT_MS = 15_000;
 
-const AuthUrlSchema = z
-  .object({ status: z.literal("ok"), url: z.string().min(1).max(8192), state: z.string().min(1).max(256) })
-  .readonly();
+const AuthUrlSchema = z.object({ status: z.literal("ok"), url: z.string().min(1).max(8192), state: z.string().min(1).max(256) }).readonly();
 
 const CallbackSchema = z.object({ status: z.literal("ok") }).readonly();
 
-const OAuthStatusSchema = z
-  .object({ status: z.enum(["wait", "ok", "error"]), error: z.string().max(1024).optional() })
-  .readonly();
+const OAuthStatusSchema = z.object({ status: z.enum(["wait", "ok", "error"]), error: z.string().max(1024).optional() }).readonly();
 
 const CancelSchema = z.object({ status: z.literal("ok"), cancelled: z.boolean().optional() }).readonly();
 
+const CredentialDownloadSchema = z
+  .object({ prefix: z.string().max(256).optional(), metadata: z.object({ prefix: z.string().max(256).optional() }).catchall(z.unknown()).optional() })
+  .catchall(z.unknown())
+  .readonly();
+
 const CredentialFileSchema = z
   .object({
-    id: z.string().min(1).max(1024),
-    auth_index: z.string().max(1024),
-    name: z.string().min(1).max(1024),
-    type: z.string().max(256),
-    provider: z.string().max(256),
-    label: z.string().max(1024),
-    status: z.string().max(256),
-    status_message: z.string().max(2048).optional(),
-    disabled: z.boolean(),
-    unavailable: z.boolean().optional(),
-    email: z.string().max(1024).optional(),
+    id: z.string().min(1).max(1024), auth_index: z.string().max(1024), name: z.string().min(1).max(1024), type: z.string().max(256),
+    provider: z.string().max(256), label: z.string().max(1024), status: z.string().max(256), status_message: z.string().max(2048).optional(),
+    disabled: z.boolean(), unavailable: z.boolean().optional(), email: z.string().max(1024).optional(),
+    created_at: z.string().max(256).optional(), updated_at: z.string().max(256).optional(),
   })
   .readonly();
 
-const CredentialsSchema = z
-  .object({ observed_at: z.string().max(256), files: z.array(CredentialFileSchema).readonly() })
-  .readonly();
+const CredentialsSchema = z.object({ observed_at: z.string().max(256), files: z.array(CredentialFileSchema).readonly() }).readonly();
 
 const CredentialModelsSchema = z
   .object({
     models: z
-      .array(
-        z
-          .object({
-            id: z.string().min(1).max(1024),
-            display_name: z.string().max(1024).optional(),
-            type: z.string().max(256).optional(),
-            owned_by: z.string().max(256).optional(),
-          })
-          .readonly(),
-      )
+      .array(z.object({ id: z.string().min(1).max(1024), display_name: z.string().max(1024).optional(), type: z.string().max(256).optional(), owned_by: z.string().max(256).optional() }).readonly())
       .readonly(),
   })
   .readonly();
@@ -128,6 +117,7 @@ export interface CliProxyManagementClient {
   readonly oauthStatus: (state: string) => Promise<CliProxyOAuthStatusResult>;
   readonly cancelSession: (state: string) => Promise<boolean>;
   readonly listCredentials: () => Promise<readonly CliProxyCredentialFile[]>;
+  readonly downloadCredential: (name: string) => Promise<CliProxyCredentialDownload>;
   readonly deleteCredential: (name: string) => Promise<void>;
   readonly patchCredentialPrefix: (name: string, prefix: string) => Promise<void>;
   readonly credentialModels: (name: string) => Promise<readonly CliProxyCredentialModel[]>;
@@ -245,7 +235,13 @@ export function createCliProxyManagementClient(options: CliProxyManagementOption
         ...(file.status_message === undefined ? {} : { statusMessage: file.status_message }),
         ...(file.unavailable === undefined ? {} : { unavailable: file.unavailable }),
         ...(file.email === undefined ? {} : { email: file.email }),
+        ...(file.created_at === undefined ? {} : { createdAt: file.created_at }),
+        ...(file.updated_at === undefined ? {} : { updatedAt: file.updated_at }),
       }));
+    },
+    async downloadCredential(name: string): Promise<CliProxyCredentialDownload> {
+      const result = await get(`/v8/management/credentials/download?name=${encodeURIComponent(name)}`, CredentialDownloadSchema);
+      return { prefix: result.prefix ?? result.metadata?.prefix };
     },
     async deleteCredential(name: string): Promise<void> {
       const path = `/v8/management/credentials?name=${encodeURIComponent(name)}`;
