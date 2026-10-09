@@ -157,7 +157,7 @@ export async function validateSource(root: string): Promise<readonly string[]> {
     "actions/upload-pages-artifact",
     "actions/deploy-pages",
     "BASE: /ai-auth-kit/",
-    "branches: [master]",
+    "workflow_dispatch:",
     "bun run qa:browser && bun run validate:dist",
   ] as const) {
     requireText(violations, workflow, workflowPath, marker)

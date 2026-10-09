@@ -1,8 +1,7 @@
 name: Deploy documentation to GitHub Pages
 
+# Docs deploy only when run by hand (Actions → Run workflow).
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 permissions:
