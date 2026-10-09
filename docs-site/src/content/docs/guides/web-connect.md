@@ -5,7 +5,7 @@ description: Mount the hosted ConnectPanel, wire it to your server route, and th
 
 The hosted flow keeps provider secrets on your server. The browser only renders
 `ConnectPanel` from the `@abran-labs/ai-auth-kit/react` subpath and forwards
-opaque protocol messages. Follow the [library guide](/guides/library/) for install
+opaque protocol messages. Follow the [library guide](../library/) for install
 wording; the snippets below assume the package is already installed.
 
 ## Mount the panel
