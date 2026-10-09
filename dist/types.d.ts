@@ -1,4 +1,5 @@
 export type AuthMethod = "api-key" | "env" | "oauth-external" | "none";
+export type AuthFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 export interface ModelDefinition {
     readonly id: string;
     readonly name: string;

@@ -15,6 +15,13 @@ Import only from `@abran-labs/ai-auth-kit`. Internal file paths are not compatib
 - External auth: `CLIPROXYAPI_BASE_URL`, `getCliProxyApiLabel`, `getCliProxyApiWarning`,
   `getExternalAuthMetadata`, `isAccountOAuthProvider`, `isCliProxyApiProvider`,
   `isExternalOAuthProvider`.
+- Hosted CLIProxyAPI: `CLIPROXY_CALLBACK_PREFIX`, `createCliProxyAccountConnector`,
+  `defaultCliProxyRoutePrefix`, `getCliProxyHostedWarning`, `CliProxyAccountConnectorOptions`,
+  `CliProxyAccountProvider`, `CliProxyManagementError`, `createCliProxyManagementClient`,
+  `CliProxyAuthUrl`, `CliProxyCredentialFile`, `CliProxyCredentialModel`,
+  `CliProxyManagementClient`, `CliProxyManagementErrorCode`, `CliProxyManagementFetch`,
+  `CliProxyManagementOptions`, `CliProxyOAuthStatusResult`, `renderCliProxyServerConfig`,
+  `CliProxyServerConfigOptions`.
 - Kit: `AuthKit`, `createAuthKit`, `createProjectAuthKit`.
 - Picker: `confirmExternalOAuthWarning`, `getAuthMethodHint`, `getAuthMethodLabel`,
   `getOAuthMethodLabel`, `LoginWithPromptsOptions`, `loginWithPrompts`, `PromptAdapter`,
@@ -94,6 +101,24 @@ loginWithPrompts(
 - Classification/labels: `isAccountOAuthProvider`, `isCliProxyApiProvider`,
   `isExternalOAuthProvider`, `getExternalAuthMetadata`, `getCliProxyApiWarning`, and
   `getCliProxyApiLabel`.
+
+## Hosted CLIProxyAPI exports
+
+- Connector: `createCliProxyAccountConnector` (stateless per-tenant Claude account flows:
+  `start` snapshots credentials and returns an authorization URL plus an opaque session;
+  `submitCallback` posts the pasted `http://localhost:54545/callback` URL;
+  `poll` prefix-pins the new credential file and returns the binding, or `account_in_use`
+  when the same Claude account is already connected). Helpers `defaultCliProxyRoutePrefix`,
+  `getCliProxyHostedWarning`, constant `CLIPROXY_CALLBACK_PREFIX`, contracts
+  `CliProxyAccountConnectorOptions` and `CliProxyAccountProvider`.
+- Management client: `createCliProxyManagementClient` for `/v8/management` OAuth, credential,
+  and model endpoints; typed `CliProxyManagementError` (`CliProxyManagementErrorCode`);
+  contracts `CliProxyManagementOptions`, `CliProxyManagementFetch`, `CliProxyManagementClient`,
+  `CliProxyAuthUrl`, `CliProxyOAuthStatusResult`, `CliProxyCredentialFile`, and
+  `CliProxyCredentialModel`.
+- Server config: `renderCliProxyServerConfig` renders a hardened v8 YAML config
+  (localhost bind, local-only management, tenant client keys, `force-model-prefix`);
+  contract `CliProxyServerConfigOptions`.
 
 ## Picker labels and warning
 

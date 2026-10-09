@@ -13,7 +13,8 @@ const ROOT_FILES = ["README.md", "LICENSE", "package.json"] as const;
 const SOURCE_FILES = [
   "account-oauth-browser", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
   "auth-policy-registry", "catalog-adapter", "catalog-cache", "catalog-http", "catalog-normalize", "catalog-refresh", "catalog-runtime",
-  "catalog-snapshot", "catalog-source-schema", "catalog", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-http",
+  "catalog-snapshot", "catalog-source-schema", "catalog", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-config",
+  "cliproxyapi-connector", "cliproxyapi-http", "cliproxyapi-management",
   "cliproxyapi-release", "cliproxyapi", "credential-removal", "external-auth", "index", "kit-runtime-auth", "kit", "picker",
   "safe-dir", "schema", "storage", "types",
 ] as const;
