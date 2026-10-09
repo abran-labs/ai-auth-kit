@@ -105,7 +105,7 @@ test("Given a declined consent, when the pasted redirect carries access_denied, 
   expect(adapter.infos.join("\n")).toContain("declined");
 });
 
-test("Given plan usage not granted, when the code is exchanged, then sign-in fails and nothing is saved", async () => {
+test("Given plan usage not granted, when the code is exchanged, then sign-in fails but the disabled registration is kept", async () => {
   const captured: ChatGptTestCaptured = {};
   const openai = createFakeOpenAi(captured, "openid profile email offline_access");
   const adapter = createAdapter();
@@ -114,7 +114,9 @@ test("Given plan usage not granted, when the code is exchanged, then sign-in fai
     openUrl: loopbackBrowser(captured, { code: "auth-code-2", client_id: ISSUED }),
   }))).rejects.toMatchObject({ name: "ChatGptPlanError", code: "plan_not_granted" });
 
-  expect(await kit.getCredential("openai")).toBeUndefined();
+  const live = await kit.getCredential("openai");
+  if (live?.type !== "oauth-external") throw new Error("Expected the disabled registration");
+  expect(live.metadata).toMatchObject({ adapter: "openai-chatgpt-plan", clientId: ISSUED, subject: "user-sub", health: "reconnect-required", planUsage: "disabled" });
   expect(await kit.secrets.get("provider:openai:oauth:access-token")).toBeUndefined();
   expect(await kit.secrets.get("provider:openai:oauth:refresh-token")).toBeUndefined();
   expect(adapter.infos.join("\n")).toContain("allow plan usage");

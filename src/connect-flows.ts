@@ -1,5 +1,5 @@
-import { exchangeChatGptCode, parseChatGptCallback, startChatGptAuthorization } from "./chatgpt-plan.js";
-import { chatGptPlanMetadata, chatGptPlanSecretRefs, CLIPROXYAPI_ACCOUNT_ADAPTER } from "./chatgpt-plan-credential.js";
+import { exchangeChatGptCode, parseChatGptCallback, planNotGrantedCause, startChatGptAuthorization } from "./chatgpt-plan.js";
+import { chatGptPlanDisabledMetadata, chatGptPlanMetadata, chatGptPlanSecretRefs, CLIPROXYAPI_ACCOUNT_ADAPTER } from "./chatgpt-plan-credential.js";
 import {
   CHATGPT_PASTE_INSTRUCTIONS,
   connectedStep,
@@ -32,12 +32,16 @@ export async function startFlow(context: ConnectFlowContext, tenantId: string, p
       const kit = context.kitFor(tenantId);
       const saved = await kit.getCredential(provider.id);
       const savedMetadata = saved?.type === "oauth-external" ? saved.metadata : undefined;
+      const idTokenHint = fresh || savedMetadata?.idTokenRef === undefined
+        ? undefined
+        : await kit.secrets.get(savedMetadata.idTokenRef);
       const authorization = startChatGptAuthorization({
         agentName: context.agentName,
         hostId: context.hostId,
         port: context.callbackPort,
         ...(fresh || savedMetadata?.clientId === undefined ? {} : { clientId: savedMetadata.clientId }),
         ...(fresh || savedMetadata?.email === undefined ? {} : { loginHint: savedMetadata.email }),
+        ...(idTokenHint === undefined ? {} : { idTokenHint }),
       });
       const flowId = newFlowId();
       const expiresAt = flowExpiry(context.now());
@@ -126,23 +130,36 @@ async function submitChatGpt(context: ConnectFlowContext, tenantId: string, flow
   if (pending.kind !== "chatgpt-plan") throw new ConnectError("invalid_request", "Invalid request.", false);
   const now = context.now();
   const callback = parseChatGptCallback(value, pending.authorization, now);
-  const signIn = await exchangeChatGptCode({
-    code: callback.code,
-    clientId: callback.clientId,
-    pending: pending.authorization,
-    ...(context.fetch === undefined ? {} : { fetch: context.fetch }),
-    now,
-  });
+  let signIn: Awaited<ReturnType<typeof exchangeChatGptCode>>;
+  try {
+    signIn = await exchangeChatGptCode({
+      code: callback.code,
+      clientId: callback.clientId,
+      pending: pending.authorization,
+      ...(context.fetch === undefined ? {} : { fetch: context.fetch }),
+      now,
+    });
+  } catch (error) {
+    const declined = planNotGrantedCause(error);
+    if (declined?.subject === undefined) throw error;
+    await context.kitFor(tenantId).saveExternalOAuth(pending.providerId, chatGptPlanDisabledMetadata({
+      clientId: declined.clientId,
+      subject: declined.subject,
+      ...(declined.email === undefined ? {} : { email: declined.email }),
+      grantedScopes: declined.grantedScopes,
+      now,
+    }));
+    throw error;
+  }
   if (pending.expectedSubject !== undefined && signIn.identity.subject !== pending.expectedSubject) {
     throw new ConnectError("identity_mismatch", "This ChatGPT sign-in belongs to a different account than the saved one. Sign in with the saved account or disconnect and start fresh.", false);
   }
   const kit = context.kitFor(tenantId);
   const refs = chatGptPlanSecretRefs(pending.providerId);
-  const stored: Record<string, string> = { ...chatGptPlanMetadata(signIn, refs) };
-  delete stored.idTokenRef;
-  await kit.saveExternalOAuth(pending.providerId, stored, [
+  await kit.saveExternalOAuth(pending.providerId, { ...chatGptPlanMetadata(signIn, refs) }, [
     [refs.accessTokenRef, signIn.accessToken],
     [refs.refreshTokenRef, signIn.refreshToken],
+    [refs.idTokenRef, signIn.idToken],
   ]);
   return connectedStep(context, tenantId, pending.providerId);
 }

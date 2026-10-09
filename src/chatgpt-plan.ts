@@ -35,6 +35,7 @@ export interface ChatGptAuthorizationRequest {
   readonly agentName: string;
   readonly hostId: string;
   readonly clientId?: string;
+  readonly idTokenHint?: string;
   readonly port?: number;
   readonly loginHint?: string;
   readonly now?: number;
@@ -60,6 +61,7 @@ export interface ChatGptPlanTokens {
 
 export interface ChatGptSignIn extends ChatGptPlanTokens {
   readonly identity: ChatGptIdentity;
+  readonly idToken: string;
 }
 
 export interface ChatGptExchangeInput {
@@ -120,6 +122,7 @@ export function startChatGptAuthorization(request: ChatGptAuthorizationRequest):
   if (clientId === CHATGPT_DYNAMIC_CLIENT_ID) url.searchParams.set("agent_name_hint", request.agentName);
   url.searchParams.set("ext_agent_host_id", request.hostId);
   if (request.loginHint) url.searchParams.set("login_hint", request.loginHint);
+  if (request.idTokenHint) url.searchParams.set("id_token_hint", request.idTokenHint);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("redirect_uri", pending.redirectUri);
   url.searchParams.set("scope", CHATGPT_PLAN_SCOPES);
@@ -199,12 +202,38 @@ async function readTokens(response: Response, refreshing: boolean): Promise<z.ou
   return parsed.data;
 }
 
-function tokensFrom(body: z.output<typeof TokenResponseSchema>, clientId: string, now: number): ChatGptPlanTokens {
+const PlanNotGrantedCauseSchema = z.object({
+  clientId: z.string().min(1),
+  subject: z.string().min(1).optional(),
+  email: z.string().min(1).optional(),
+  grantedScopes: z.string(),
+  tokens: z.object({
+    accessToken: z.string().min(1),
+    refreshToken: z.string().min(1),
+    expiresAt: z.number(),
+    scopes: z.array(z.string()).readonly(),
+    clientId: z.string().min(1),
+  }).optional(),
+}).readonly();
+
+export type ChatGptPlanNotGrantedCause = z.output<typeof PlanNotGrantedCauseSchema>;
+
+export function planNotGrantedCause(error: unknown): ChatGptPlanNotGrantedCause | undefined {
+  if (!(error instanceof ChatGptPlanError) || error.code !== "plan_not_granted") return undefined;
+  const parsed = PlanNotGrantedCauseSchema.safeParse(error.cause);
+  return parsed.success ? parsed.data : undefined;
+}
+
+function splitTokens(body: z.output<typeof TokenResponseSchema>, clientId: string, now: number): { readonly tokens: ChatGptPlanTokens; readonly planGranted: boolean; readonly grantedScopes: string } {
   const scopes = body.scope.split(/\s+/).filter(Boolean);
-  if (!scopes.includes(CHATGPT_PLAN_SCOPE)) {
-    throw new ChatGptPlanError("plan_not_granted", "ChatGPT plan usage was not allowed. Sign in again and allow plan usage, or use an API key.");
-  }
-  return { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: now + body.expires_in * 1000, scopes, clientId };
+  const tokens: ChatGptPlanTokens = { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: now + body.expires_in * 1000, scopes, clientId };
+  return { tokens, planGranted: scopes.includes(CHATGPT_PLAN_SCOPE), grantedScopes: scopes.join(" ") };
+}
+
+function planNotGranted(clientId: string, grantedScopes: string, detail: Omit<ChatGptPlanNotGrantedCause, "clientId" | "grantedScopes">): ChatGptPlanError {
+  return new ChatGptPlanError("plan_not_granted", "ChatGPT plan usage was not allowed. Sign in again and allow plan usage, or use an API key.", {
+    cause: { clientId, grantedScopes, ...detail },
+  });
 }
 
 export async function exchangeChatGptCode(input: ChatGptExchangeInput): Promise<ChatGptSignIn> {
@@ -221,17 +250,27 @@ export async function exchangeChatGptCode(input: ChatGptExchangeInput): Promise<
   if (body.id_token === undefined) throw new ChatGptPlanError("id_token_invalid", "ChatGPT did not return an ID token.");
   const now = input.now ?? Date.now();
   const identity = await verifyChatGptIdToken(body.id_token, { clientId: input.clientId, nonce: input.pending.nonce, fetch: fetchImpl, now });
-  return { ...tokensFrom(body, input.clientId, now), identity };
+  const split = splitTokens(body, input.clientId, now);
+  if (!split.planGranted) {
+    throw planNotGranted(input.clientId, split.grantedScopes, {
+      subject: identity.subject,
+      ...(identity.email === undefined ? {} : { email: identity.email }),
+    });
+  }
+  return { ...split.tokens, identity, idToken: body.id_token };
 }
 
 export async function refreshChatGptTokens(input: ChatGptRefreshInput): Promise<ChatGptPlanTokens> {
+  const now = input.now ?? Date.now();
   const response = await postForm(CHATGPT_TOKEN_URL, {
     grant_type: "refresh_token",
     client_id: input.clientId,
     refresh_token: input.refreshToken,
     resource: CHATGPT_PLAN_RESOURCE,
   }, input.fetch ?? globalThis.fetch);
-  return tokensFrom(await readTokens(response, true), input.clientId, input.now ?? Date.now());
+  const split = splitTokens(await readTokens(response, true), input.clientId, now);
+  if (!split.planGranted) throw planNotGranted(input.clientId, split.grantedScopes, { tokens: split.tokens });
+  return split.tokens;
 }
 
 export async function revokeChatGptSession(input: Omit<ChatGptRefreshInput, "now">): Promise<boolean> {

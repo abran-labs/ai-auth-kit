@@ -24,6 +24,7 @@ export const ChatGptPlanMetadataSchema = z.object({
   scopes: z.string(),
   baseUrl: z.literal(CHATGPT_PLAN_RESOURCE),
   health: z.literal("reconnect-required").optional(),
+  planUsage: z.literal("disabled").optional(),
 }).readonly();
 
 export type ChatGptPlanMetadata = z.output<typeof ChatGptPlanMetadataSchema>;
@@ -52,4 +53,27 @@ export function chatGptPlanMetadata(signIn: ChatGptSignIn, refs: ChatGptPlanSecr
 export function parseChatGptPlanMetadata(metadata: Readonly<Record<string, string>>): ChatGptPlanMetadata | undefined {
   const parsed = ChatGptPlanMetadataSchema.safeParse(metadata);
   return parsed.success ? parsed.data : undefined;
+}
+
+export interface ChatGptPlanDisabledRegistration {
+  readonly clientId: string;
+  readonly subject: string;
+  readonly email?: string;
+  readonly grantedScopes: string;
+  readonly now: number;
+}
+
+export function chatGptPlanDisabledMetadata(registration: ChatGptPlanDisabledRegistration): Record<string, string> {
+  const metadata: Record<string, string> = {
+    adapter: CHATGPT_PLAN_ADAPTER,
+    clientId: registration.clientId,
+    subject: registration.subject,
+    expiresAt: String(registration.now),
+    scopes: registration.grantedScopes,
+    baseUrl: CHATGPT_PLAN_RESOURCE,
+    health: "reconnect-required",
+    planUsage: "disabled",
+  };
+  if (registration.email !== undefined) metadata.email = registration.email;
+  return metadata;
 }

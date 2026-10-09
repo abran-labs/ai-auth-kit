@@ -1,4 +1,4 @@
-import { ChatGptPlanError, refreshChatGptTokens } from "./chatgpt-plan.js";
+import { ChatGptPlanError, planNotGrantedCause, refreshChatGptTokens, type ChatGptPlanTokens } from "./chatgpt-plan.js";
 import { parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
 import type { AuthFetch, ExternalOAuthCredential, SecretStore } from "./types.js";
 
@@ -58,7 +58,7 @@ async function resolve(context: ChatGptPlanRefreshContext): Promise<ChatGptPlanA
     return { kind: "reconnect-required", credential: marked };
   }
   try {
-    const tokens = await refreshChatGptTokens({ clientId: metadata.clientId, refreshToken, now, ...(context.fetch ? { fetch: context.fetch } : {}) });
+    const tokens: ChatGptPlanTokens = await refreshChatGptTokens({ clientId: metadata.clientId, refreshToken, now, ...(context.fetch ? { fetch: context.fetch } : {}) });
     const refreshed: ExternalOAuthCredential = {
       ...current,
       metadata: { ...current.metadata, expiresAt: String(tokens.expiresAt), scopes: tokens.scopes.join(" ") },
@@ -71,9 +71,27 @@ async function resolve(context: ChatGptPlanRefreshContext): Promise<ChatGptPlanA
     });
     return { kind: "ready", accessToken: tokens.accessToken, credential: refreshed };
   } catch (error) {
-    if (error instanceof ChatGptPlanError && (error.code === "reconnect_required" || error.code === "invalid_client" || error.code === "plan_not_granted")) {
+    if (error instanceof ChatGptPlanError && (error.code === "reconnect_required" || error.code === "invalid_client")) {
       const marked = reconnectRequired(current);
       await context.save(marked);
+      return { kind: "reconnect-required", credential: marked };
+    }
+    if (error instanceof ChatGptPlanError && error.code === "plan_not_granted") {
+      const declined = planNotGrantedCause(error);
+      const marked: ExternalOAuthCredential = {
+        ...current,
+        metadata: { ...current.metadata, health: "reconnect-required", planUsage: "disabled" },
+      };
+      if (declined?.tokens === undefined) {
+        await context.save(marked);
+      } else {
+        await context.save(marked, {
+          accessTokenRef: metadata.accessTokenRef,
+          accessToken: declined.tokens.accessToken,
+          refreshTokenRef: metadata.refreshTokenRef,
+          refreshToken: declined.tokens.refreshToken,
+        });
+      }
       return { kind: "reconnect-required", credential: marked };
     }
     throw error;

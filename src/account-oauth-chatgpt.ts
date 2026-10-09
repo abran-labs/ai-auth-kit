@@ -1,15 +1,17 @@
 import { spawn } from "node:child_process";
 import type * as prompts from "@clack/prompts";
-import { chatGptPlanMetadata, chatGptPlanSecretRefs, parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
+import { chatGptPlanDisabledMetadata, chatGptPlanMetadata, chatGptPlanSecretRefs, parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
 import {
   ChatGptPlanError,
   createChatGptHostId,
   exchangeChatGptCode,
   isChatGptHostId,
   parseChatGptCallback,
+  planNotGrantedCause,
   revokeChatGptSession,
   startChatGptAuthorization,
   type ChatGptPendingAuthorization,
+  type ChatGptSignIn,
 } from "./chatgpt-plan.js";
 import { startChatGptLoopback } from "./chatgpt-plan-loopback.js";
 import { CHATGPT_HOST_ID_REF } from "./credential-removal.js";
@@ -55,6 +57,12 @@ function messageFor(error: ChatGptPlanError): string {
     case "upstream_unavailable": return `ChatGPT sign-in is unavailable. ${error.message} No credential was saved.`;
     case "callback_invalid": return `${error.message} No credential was saved.`;
   }
+}
+
+function redactAuthorizationUrl(url: string): string {
+  const parsed = new URL(url);
+  parsed.searchParams.delete("id_token_hint");
+  return parsed.toString();
 }
 
 async function openBrowser(url: string, deps: ChatGptPlanLoginDeps): Promise<boolean> {
@@ -105,18 +113,20 @@ export async function loginChatGptPlan(
   const callback = await startChatGptLoopback(deps.chatGptLoopbackPorts ?? DEFAULT_PORTS, () => pending);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
+    const idTokenHint = reauth?.idTokenRef === undefined ? undefined : await kit.secrets.get(reauth.idTokenRef);
     const authorization = startChatGptAuthorization({
       agentName: deps.agentName ?? AGENT_NAME,
       hostId,
       port: callback.port,
       ...(reauth === undefined ? {} : { clientId: reauth.clientId }),
       ...(reauth?.email === undefined ? {} : { loginHint: reauth.email }),
+      ...(idTokenHint === undefined ? {} : { idTokenHint }),
     });
     pending = authorization.pending;
     const opened = await openBrowser(authorization.authorizationUrl, deps);
     prompts.info(opened
       ? "ChatGPT plan sign-in opened in your browser. Approve plan usage there, then return here."
-      : `Open this URL to continue ChatGPT plan sign-in: ${authorization.authorizationUrl}`);
+      : `Open this URL to continue ChatGPT plan sign-in: ${redactAuthorizationUrl(authorization.authorizationUrl)}`);
     const finishers: Promise<Finish>[] = [
       callback.waitForCallback().then((result): Finish => result.ok
         ? { kind: "callback", code: result.code, clientId: result.clientId }
@@ -140,13 +150,28 @@ export async function loginChatGptPlan(
     const exchange = winner.kind === "callback"
       ? { code: winner.code, clientId: winner.clientId }
       : parseChatGptCallback(winner.url, authorization.pending);
-    const signIn = await exchangeChatGptCode({
-      code: exchange.code,
-      clientId: exchange.clientId,
-      pending: authorization.pending,
-      fetch: deps.fetch ?? globalThis.fetch,
-      now: deps.now?.() ?? Date.now(),
-    });
+    const now = deps.now?.() ?? Date.now();
+    let signIn: ChatGptSignIn;
+    try {
+      signIn = await exchangeChatGptCode({
+        code: exchange.code,
+        clientId: exchange.clientId,
+        pending: authorization.pending,
+        fetch: deps.fetch ?? globalThis.fetch,
+        now,
+      });
+    } catch (error) {
+      const declined = planNotGrantedCause(error);
+      if (declined?.subject === undefined) throw error;
+      await kit.saveExternalOAuth(provider.id, chatGptPlanDisabledMetadata({
+        clientId: declined.clientId,
+        subject: declined.subject,
+        ...(declined.email === undefined ? {} : { email: declined.email }),
+        grantedScopes: declined.grantedScopes,
+        now,
+      }));
+      throw error;
+    }
     if (reauth !== undefined && signIn.identity.subject !== reauth.subject) {
       throw new ChatGptPlanError("identity_mismatch", "This ChatGPT sign-in belongs to a different account than the saved one. Sign in with the saved account, or sign out and start fresh.");
     }
@@ -154,6 +179,7 @@ export async function loginChatGptPlan(
     return kit.saveExternalOAuth(provider.id, chatGptPlanMetadata(signIn, refs), [
       [refs.accessTokenRef, signIn.accessToken],
       [refs.refreshTokenRef, signIn.refreshToken],
+      [refs.idTokenRef, signIn.idToken],
     ]);
   } catch (error) {
     if (error instanceof ChatGptPlanError) prompts.info(messageFor(error));
