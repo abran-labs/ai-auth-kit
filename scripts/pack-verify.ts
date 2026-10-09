@@ -18,11 +18,42 @@ const SOURCE_FILES = [
   "safe-dir", "schema", "storage", "types",
 ] as const;
 const DIST_FILES = [...SOURCE_FILES, "catalog-index"] as const;
+const REACT_SOURCE_FILES = [
+  "src/react/ConnectPanel.tsx",
+  "src/react/connect-flow.tsx",
+  "src/react/connect-state.ts",
+  "src/react/entity-views.tsx",
+  "src/react/featured-providers.tsx",
+  "src/react/index.ts",
+  "src/react/provider-catalog.tsx",
+  "src/react/step-views.tsx",
+  "src/react/styles.ts",
+  "src/react/transport.ts",
+  "src/react/use-connect.ts",
+  "src/react/use-step-polling.ts",
+] as const;
+const REACT_DIST_FILES = [
+  "dist/react/ConnectPanel",
+  "dist/react/connect-flow",
+  "dist/react/connect-state",
+  "dist/react/entity-views",
+  "dist/react/featured-providers",
+  "dist/react/index",
+  "dist/react/provider-catalog",
+  "dist/react/step-views",
+  "dist/react/styles",
+  "dist/react/transport",
+  "dist/react/use-connect",
+  "dist/react/use-step-polling",
+] as const;
 const LIFECYCLE_SCRIPTS = ["prepare", "prepack", "postpack", "preinstall", "install", "postinstall"] as const;
 
 const packageSchema = z.object({
   bin: z.never().optional(),
-  exports: z.object({ ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict() }).strict(),
+  exports: z.object({
+    ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict(),
+    "./react": z.object({ bun: z.literal("./src/react/index.ts"), import: z.literal("./dist/react/index.js"), types: z.literal("./dist/react/index.d.ts") }).strict(),
+  }).strict(),
   files: z.array(z.string()),
   publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
   scripts: z.record(z.string(), z.string()),
@@ -52,7 +83,9 @@ function expectedInventory(): readonly string[] {
     ...ROOT_FILES,
     ...GENERATED_CATALOG,
     ...SOURCE_FILES.map((file) => `src/${file}.ts`),
+    ...REACT_SOURCE_FILES,
     ...DIST_FILES.flatMap((file) => [`dist/${file}.d.ts`, `dist/${file}.js`, `dist/${file}.js.map`]),
+    ...REACT_DIST_FILES.flatMap((file) => [`${file}.d.ts`, `${file}.js`, `${file}.js.map`]),
   ].sort();
 }
 
@@ -60,7 +93,9 @@ export function validateManifest(value: unknown): void {
   const manifest = packageSchema.parse(value);
   const expectedFiles = [
     "dist",
-    ...SOURCE_FILES.map((file) => `src/${file}.ts`),
+    ...SOURCE_FILES.map((file) => `src/${file}.ts`).flatMap((file) =>
+      file === "src/picker.ts" ? [file, ...REACT_SOURCE_FILES] : [file],
+    ),
     ...GENERATED_CATALOG,
     ...ROOT_FILES,
   ];

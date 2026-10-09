@@ -1,0 +1,17 @@
+export const connectPanelCss = [
+	"[data-aak-panel]{--aak-accent:#2563eb;--aak-radius:8px;--aak-border:#d4d4d8;--aak-muted:#52525b;--aak-danger:#b91c1c;",
+	"font-family:inherit;display:flex;flex-direction:column;gap:1rem;max-width:32rem;}",
+	"[data-aak-panel] button{border:1px solid var(--aak-border);border-radius:var(--aak-radius);",
+	"background:#fff;cursor:pointer;font:inherit;padding:.5rem .9rem;}",
+	"[data-aak-panel] button:hover{border-color:var(--aak-accent);}",
+	"[data-aak-panel] button[data-aak-primary]{background:var(--aak-accent);border-color:var(--aak-accent);color:#fff;}",
+	"[data-aak-panel] input[type=password],[data-aak-panel] input[type=text],",
+	"[data-aak-panel] input:not([type]){border:1px solid var(--aak-border);border-radius:var(--aak-radius);",
+	"font:inherit;padding:.5rem .75rem;width:100%;}",
+	"[data-aak-panel] [data-aak-muted]{color:var(--aak-muted);}",
+	"[data-aak-panel] [data-aak-error]{border:1px solid var(--aak-danger);border-radius:var(--aak-radius);",
+	"color:var(--aak-danger);padding:.5rem .75rem;}",
+	"[data-aak-panel] [data-aak-featured]{display:flex;flex-direction:column;gap:.5rem;}",
+	"[data-aak-panel] [data-aak-connection]{border:1px solid var(--aak-border);",
+	"border-radius:var(--aak-radius);display:flex;flex-direction:column;gap:.5rem;padding:.75rem;}",
+].join("\n");

@@ -9,6 +9,11 @@ AI Auth Kit has two direct runtime npm dependencies:
 
 `@oh-my-pi/pi-ai` and `ai` aren't imported runtime dependencies or supported peers.
 
+`react@19.3.0` is an optional peer (`peerDependenciesMeta.react.optional=true`) for the
+`./react` subpath export only. The core stays React-free; `react`, `react-dom@19.3.0`,
+`@types/react@19.3.0`, and `@types/react-dom@19.2.4` are exact devDependencies used by
+`src/react/*` and its tests. No CSS framework dependency is allowed for the hosted connect UI.
+
 ## Seven-day resolution cooldown
 
 `bunfig.toml` sets `minimumReleaseAge = 604800`. Bun applies that cooldown while selecting a new npm package version. It doesn't retroactively inspect the publication age of unchanged entries in `bun.lock`, and Git dependencies aren't covered. There is no production exclusion in `minimumReleaseAgeExcludes`.
