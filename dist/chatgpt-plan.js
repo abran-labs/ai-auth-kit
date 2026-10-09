@@ -1,7 +1,9 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { CHATGPT_ISSUER, ChatGptPlanError, verifyChatGptIdToken } from "./chatgpt-plan-id-token.js";
+import { planNotGrantedError, splitPlanTokens } from "./chatgpt-plan-scope.js";
 export { CHATGPT_ISSUER, ChatGptPlanError } from "./chatgpt-plan-id-token.js";
+export { planNotGrantedCause } from "./chatgpt-plan-scope.js";
 export const CHATGPT_AUTHORIZE_URL = `${CHATGPT_ISSUER}/api/accounts/authorize`;
 export const CHATGPT_TOKEN_URL = `${CHATGPT_ISSUER}/api/accounts/oauth/token`;
 export const CHATGPT_REVOKE_URL = `${CHATGPT_ISSUER}/api/accounts/oauth/revoke`;
@@ -66,6 +68,8 @@ export function startChatGptAuthorization(request) {
     url.searchParams.set("ext_agent_host_id", request.hostId);
     if (request.loginHint)
         url.searchParams.set("login_hint", request.loginHint);
+    if (request.idTokenHint)
+        url.searchParams.set("id_token_hint", request.idTokenHint);
     url.searchParams.set("response_type", "code");
     url.searchParams.set("redirect_uri", pending.redirectUri);
     url.searchParams.set("scope", CHATGPT_PLAN_SCOPES);
@@ -99,8 +103,10 @@ export function parseChatGptCallback(input, pending, now = Date.now()) {
     const error = url.searchParams.get("error");
     if (error === "access_denied")
         throw new ChatGptPlanError("access_denied", "ChatGPT access was declined.");
-    if (error)
-        throw new ChatGptPlanError("callback_invalid", `ChatGPT sign-in failed: ${url.searchParams.get("error_description") ?? error}`);
+    if (error) {
+        const detail = url.searchParams.get("error_description") ?? error;
+        throw new ChatGptPlanError("callback_invalid", "ChatGPT sign-in failed. Start again.", { cause: new Error(detail) });
+    }
     const code = url.searchParams.get("code");
     if (!code)
         throw new ChatGptPlanError("callback_invalid", "The address does not contain an authorization code.");
@@ -151,13 +157,6 @@ async function readTokens(response, refreshing) {
         throw new ChatGptPlanError("upstream_unavailable", "ChatGPT returned an unexpected token response.");
     return parsed.data;
 }
-function tokensFrom(body, clientId, now) {
-    const scopes = body.scope.split(/\s+/).filter(Boolean);
-    if (!scopes.includes(CHATGPT_PLAN_SCOPE)) {
-        throw new ChatGptPlanError("plan_not_granted", "ChatGPT plan usage was not allowed. Sign in again and allow plan usage, or use an API key.");
-    }
-    return { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: now + body.expires_in * 1000, scopes, clientId };
-}
 export async function exchangeChatGptCode(input) {
     const fetchImpl = input.fetch ?? globalThis.fetch;
     const response = await postForm(CHATGPT_TOKEN_URL, {
@@ -173,16 +172,27 @@ export async function exchangeChatGptCode(input) {
         throw new ChatGptPlanError("id_token_invalid", "ChatGPT did not return an ID token.");
     const now = input.now ?? Date.now();
     const identity = await verifyChatGptIdToken(body.id_token, { clientId: input.clientId, nonce: input.pending.nonce, fetch: fetchImpl, now });
-    return { ...tokensFrom(body, input.clientId, now), identity };
+    const split = splitPlanTokens(body, input.clientId, now);
+    if (!split.planGranted) {
+        throw planNotGrantedError(input.clientId, split.grantedScopes, {
+            subject: identity.subject,
+            ...(identity.email === undefined ? {} : { email: identity.email }),
+        });
+    }
+    return { ...split.tokens, identity, idToken: body.id_token };
 }
 export async function refreshChatGptTokens(input) {
+    const now = input.now ?? Date.now();
     const response = await postForm(CHATGPT_TOKEN_URL, {
         grant_type: "refresh_token",
         client_id: input.clientId,
         refresh_token: input.refreshToken,
         resource: CHATGPT_PLAN_RESOURCE,
     }, input.fetch ?? globalThis.fetch);
-    return tokensFrom(await readTokens(response, true), input.clientId, input.now ?? Date.now());
+    const split = splitPlanTokens(await readTokens(response, true), input.clientId, now);
+    if (!split.planGranted)
+        throw planNotGrantedError(input.clientId, split.grantedScopes, { tokens: split.tokens });
+    return split.tokens;
 }
 export async function revokeChatGptSession(input) {
     const response = await postForm(CHATGPT_REVOKE_URL, {

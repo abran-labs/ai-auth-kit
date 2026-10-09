@@ -31,6 +31,8 @@ export function mapChatGptError(error) {
             return connectErrorResponse("callback_invalid", error.message, false);
         case "id_token_invalid":
             return connectErrorResponse("callback_invalid", "ChatGPT sign-in could not be verified. Start again.", false);
+        case "identity_mismatch":
+            return connectErrorResponse("identity_mismatch", error.message, false);
         case "invalid_client":
             return connectErrorResponse("upstream_unavailable", "ChatGPT rejected this app registration. Start again.", true);
         case "reconnect_required":
@@ -58,6 +60,7 @@ const ChatGptFlowPendingSchema = z
     kind: z.literal("chatgpt-plan"),
     providerId: z.literal("openai"),
     authorization: ChatGptPendingAuthorizationSchema,
+    expectedSubject: z.string().min(1).optional(),
     expiresAt: z.number().int().positive(),
 })
     .readonly();

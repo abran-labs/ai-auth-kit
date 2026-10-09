@@ -1,4 +1,5 @@
-import { type ConnectStatus, type Connection } from "./connect-protocol.js";
+import { type ChatGptPlanLock } from "./chatgpt-plan-refresh.js";
+import { type ConnectModel, type ConnectStatus, type Connection } from "./connect-protocol.js";
 import type { ProxyAccountBinding, ProxyAccountConnector } from "./hosted-types.js";
 import { AuthKit } from "./kit.js";
 import type { AuthFetch, AuthKitState, ModelDefinition, ProviderDefinition, StoredCredential } from "./types.js";
@@ -15,8 +16,15 @@ export interface ConnectionRuntimeDeps {
     readonly proxyAccounts: ProxyAccountConnector | undefined;
     readonly fetch: AuthFetch | undefined;
     readonly now: () => number;
+    readonly lock?: ChatGptPlanLock;
 }
 export declare function resolveConnectionRuntime(deps: ConnectionRuntimeDeps): Promise<import("./hosted-types.js").ConnectionRuntime | undefined>;
+export interface ChatGptPlanModelsDeps {
+    readonly kit: AuthKit;
+    readonly providerId: string;
+    readonly fetch: AuthFetch | undefined;
+}
+export declare function chatGptPlanModelsForTenant(deps: ChatGptPlanModelsDeps): Promise<readonly ConnectModel[] | undefined>;
 export declare function proxyBindingFrom(metadata: Readonly<Record<string, string>>): ProxyAccountBinding | undefined;
 export type FailureKind = "auth_revoked" | "plan_limit" | "not_eligible";
 export interface ReportFailure {

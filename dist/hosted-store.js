@@ -55,11 +55,30 @@ function pendingKey(flowId, tenantId) {
 }
 export function createMemoryPendingFlowStore() {
     const flows = new Map();
+    const MAX_ENTRIES = 10_000;
+    function pruneExpired(now) {
+        for (const [key, entry] of flows) {
+            if (entry.expiresAt <= now)
+                flows.delete(key);
+        }
+    }
+    function evictOldest() {
+        while (flows.size > MAX_ENTRIES) {
+            const oldest = flows.keys().next();
+            if (oldest.done === true)
+                return;
+            flows.delete(oldest.value);
+        }
+    }
     return {
         async put(flowId, tenantId, value, expiresAt) {
+            pruneExpired(Date.now());
+            flows.delete(pendingKey(flowId, tenantId));
             flows.set(pendingKey(flowId, tenantId), { value, expiresAt });
+            evictOldest();
         },
         async take(flowId, tenantId) {
+            pruneExpired(Date.now());
             const entry = flows.get(pendingKey(flowId, tenantId));
             if (entry === undefined)
                 return undefined;
@@ -67,6 +86,7 @@ export function createMemoryPendingFlowStore() {
             return entry.value;
         },
         async peek(flowId, tenantId) {
+            pruneExpired(Date.now());
             return flows.get(pendingKey(flowId, tenantId))?.value;
         },
         async delete(flowId, tenantId) {

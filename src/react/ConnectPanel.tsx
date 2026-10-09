@@ -2,7 +2,7 @@ import { useState, type JSX } from "react";
 import type { Connection, SelectedModelSummary } from "../connect-protocol.js";
 import { visibleProviders } from "./connect-state.js";
 import { FlowView } from "./connect-flow.js";
-import { ConnectionCard, ModelPickerView, StatusNotice } from "./entity-views.js";
+import { ConnectionCard, DisconnectNotice, ModelPickerView, StatusNotice } from "./entity-views.js";
 import { FeaturedActions } from "./featured-providers.js";
 import { MethodList, ProviderCatalog } from "./provider-catalog.js";
 import type { StepSubmit } from "./step-views.js";
@@ -98,6 +98,7 @@ export function ConnectPanel(properties: ConnectPanelProps): JSX.Element {
 					retryable={state.retryable}
 				/>
 			)}
+			{state.notice === undefined ? null : <DisconnectNotice notice={state.notice} />}
 			{state.phase === "loading" ? <span data-aak-loading="">Loading</span> : null}
 			{state.status === undefined ? null : (
 				<div data-aak-connections="">

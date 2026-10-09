@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { chatGptPlanMetadata, chatGptPlanSecretRefs, parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
-import { ChatGptPlanError, createChatGptHostId, exchangeChatGptCode, isChatGptHostId, parseChatGptCallback, revokeChatGptSession, startChatGptAuthorization, } from "./chatgpt-plan.js";
+import { chatGptPlanDisabledMetadata, chatGptPlanMetadata, chatGptPlanSecretRefs, parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
+import { ChatGptPlanError, createChatGptHostId, exchangeChatGptCode, isChatGptHostId, parseChatGptCallback, planNotGrantedCause, revokeChatGptSession, startChatGptAuthorization, } from "./chatgpt-plan.js";
 import { startChatGptLoopback } from "./chatgpt-plan-loopback.js";
 import { CHATGPT_HOST_ID_REF } from "./credential-removal.js";
 const DEFAULT_PORTS = [1455, 1457];
@@ -13,9 +13,15 @@ function messageFor(error) {
         case "invalid_client": return "ChatGPT rejected this app registration. Sign in again. No credential was saved.";
         case "reconnect_required": return "The ChatGPT connection ended. Sign in again. No credential was saved.";
         case "id_token_invalid": return `ChatGPT identity could not be verified. ${error.message} No credential was saved.`;
+        case "identity_mismatch": return `${error.message} No credential was saved.`;
         case "upstream_unavailable": return `ChatGPT sign-in is unavailable. ${error.message} No credential was saved.`;
         case "callback_invalid": return `${error.message} No credential was saved.`;
     }
+}
+function redactAuthorizationUrl(url) {
+    const parsed = new URL(url);
+    parsed.searchParams.delete("id_token_hint");
+    return parsed.toString();
 }
 async function openBrowser(url, deps) {
     if (deps.openUrl)
@@ -61,18 +67,20 @@ export async function loginChatGptPlan(kit, provider, prompts, deps = {}) {
     const callback = await startChatGptLoopback(deps.chatGptLoopbackPorts ?? DEFAULT_PORTS, () => pending);
     let timer;
     try {
+        const idTokenHint = reauth?.idTokenRef === undefined ? undefined : await kit.secrets.get(reauth.idTokenRef);
         const authorization = startChatGptAuthorization({
             agentName: deps.agentName ?? AGENT_NAME,
             hostId,
             port: callback.port,
             ...(reauth === undefined ? {} : { clientId: reauth.clientId }),
             ...(reauth?.email === undefined ? {} : { loginHint: reauth.email }),
+            ...(idTokenHint === undefined ? {} : { idTokenHint }),
         });
         pending = authorization.pending;
         const opened = await openBrowser(authorization.authorizationUrl, deps);
         prompts.info(opened
             ? "ChatGPT plan sign-in opened in your browser. Approve plan usage there, then return here."
-            : `Open this URL to continue ChatGPT plan sign-in: ${authorization.authorizationUrl}`);
+            : `Open this URL to continue ChatGPT plan sign-in: ${redactAuthorizationUrl(authorization.authorizationUrl)}`);
         const finishers = [
             callback.waitForCallback().then((result) => result.ok
                 ? { kind: "callback", code: result.code, clientId: result.clientId }
@@ -97,17 +105,39 @@ export async function loginChatGptPlan(kit, provider, prompts, deps = {}) {
         const exchange = winner.kind === "callback"
             ? { code: winner.code, clientId: winner.clientId }
             : parseChatGptCallback(winner.url, authorization.pending);
-        const signIn = await exchangeChatGptCode({
-            code: exchange.code,
-            clientId: exchange.clientId,
-            pending: authorization.pending,
-            fetch: deps.fetch ?? globalThis.fetch,
-            now: deps.now?.() ?? Date.now(),
-        });
+        const now = deps.now?.() ?? Date.now();
+        let signIn;
+        try {
+            signIn = await exchangeChatGptCode({
+                code: exchange.code,
+                clientId: exchange.clientId,
+                pending: authorization.pending,
+                fetch: deps.fetch ?? globalThis.fetch,
+                now,
+            });
+        }
+        catch (error) {
+            const declined = planNotGrantedCause(error);
+            if (declined?.subject === undefined)
+                throw error;
+            await kit.saveExternalOAuth(provider.id, chatGptPlanDisabledMetadata({
+                clientId: declined.clientId,
+                subject: declined.subject,
+                ...(declined.email === undefined ? {} : { email: declined.email }),
+                grantedScopes: declined.grantedScopes,
+                now,
+            }));
+            throw error;
+        }
+        if (reauth !== undefined && signIn.identity.subject !== reauth.subject) {
+            throw new ChatGptPlanError("identity_mismatch", "This ChatGPT sign-in belongs to a different account than the saved one. Sign in with the saved account, or sign out and start fresh.");
+        }
         const refs = chatGptPlanSecretRefs(provider.id);
-        await kit.secrets.set(refs.accessTokenRef, signIn.accessToken);
-        await kit.secrets.set(refs.refreshTokenRef, signIn.refreshToken);
-        return kit.saveExternalOAuth(provider.id, chatGptPlanMetadata(signIn, refs));
+        return kit.saveExternalOAuth(provider.id, chatGptPlanMetadata(signIn, refs), [
+            [refs.accessTokenRef, signIn.accessToken],
+            [refs.refreshTokenRef, signIn.refreshToken],
+            [refs.idTokenRef, signIn.idToken],
+        ]);
     }
     catch (error) {
         if (error instanceof ChatGptPlanError)
@@ -139,22 +169,37 @@ export async function signOutChatGptPlan(kit, deps = {}) {
             confirmed = false;
         }
     }
-    if (metadata.accessTokenRef !== undefined)
-        await kit.secrets.delete(metadata.accessTokenRef);
-    if (metadata.refreshTokenRef !== undefined)
-        await kit.secrets.delete(metadata.refreshTokenRef);
-    if (metadata.idTokenRef !== undefined)
-        await kit.secrets.delete(metadata.idTokenRef);
-    // Keep clientId/subject/email so re-login reuses the issued registration; health flags reconnect.
-    await kit.saveExternalOAuth("openai", {
-        adapter: metadata.adapter,
-        clientId: metadata.clientId,
-        subject: metadata.subject,
-        ...(metadata.email === undefined ? {} : { email: metadata.email }),
-        expiresAt: metadata.expiresAt,
-        scopes: metadata.scopes,
-        baseUrl: metadata.baseUrl,
-        health: "reconnect-required",
+    await kit.runExclusive(async () => {
+        const live = await kit.store.read();
+        const current = live.credentials.openai;
+        if (current?.type !== "oauth-external")
+            return;
+        const currentMetadata = parseChatGptPlanMetadata(current.metadata);
+        if (currentMetadata === undefined)
+            return;
+        if (currentMetadata.accessTokenRef !== undefined)
+            await kit.secrets.delete(currentMetadata.accessTokenRef);
+        if (currentMetadata.refreshTokenRef !== undefined)
+            await kit.secrets.delete(currentMetadata.refreshTokenRef);
+        if (currentMetadata.idTokenRef !== undefined)
+            await kit.secrets.delete(currentMetadata.idTokenRef);
+        // Keep clientId/subject/email so re-login reuses the issued registration; health flags reconnect.
+        const next = {
+            adapter: currentMetadata.adapter,
+            clientId: currentMetadata.clientId,
+            subject: currentMetadata.subject,
+            expiresAt: currentMetadata.expiresAt,
+            scopes: currentMetadata.scopes,
+            baseUrl: currentMetadata.baseUrl,
+            health: "reconnect-required",
+        };
+        if (currentMetadata.email !== undefined)
+            next.email = currentMetadata.email;
+        await kit.store.write({
+            ...live,
+            credentials: { ...live.credentials, openai: { type: "oauth-external", metadata: next, createdAt: current.createdAt } },
+            updatedAt: new Date().toISOString(),
+        });
     });
     return { remoteRevocationConfirmed: confirmed };
 }

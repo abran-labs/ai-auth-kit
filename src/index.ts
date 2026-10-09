@@ -45,20 +45,30 @@ export {
   startChatGptAuthorization,
 } from "./chatgpt-plan.js";
 export {
+  type ChatGptPlanNotGrantedCause,
+  planNotGrantedCause,
+} from "./chatgpt-plan-scope.js";
+export {
   CHATGPT_JWKS_URL,
   type ChatGptIdTokenCheck,
-  resetChatGptSigningKeysForTests,
   verifyChatGptIdToken,
 } from "./chatgpt-plan-id-token.js";
 export {
   CHATGPT_PLAN_ADAPTER,
+  type ChatGptPlanDisabledRegistration,
   type ChatGptPlanMetadata,
   type ChatGptPlanSecretRefs,
+  chatGptPlanDisabledMetadata,
   chatGptPlanMetadata,
   chatGptPlanSecretRefs,
   CLIPROXYAPI_ACCOUNT_ADAPTER,
   parseChatGptPlanMetadata,
 } from "./chatgpt-plan-credential.js";
+export {
+  CHATGPT_PLAN_MODELS_URL,
+  type ChatGptPlanModelsInput,
+  listChatGptPlanModels,
+} from "./chatgpt-plan-models.js";
 export {
   type ChatGptCallbackOutcome,
   type ChatGptLoopback,
@@ -67,8 +77,11 @@ export {
 export {
   CHATGPT_PLAN_REFRESH_WINDOW_MS,
   type ChatGptPlanAccess,
+  type ChatGptPlanLock,
   type ChatGptPlanRefreshContext,
+  type ChatGptPlanTokenWrite,
   ensureChatGptPlanAccess,
+  isSameChatGptGeneration,
 } from "./chatgpt-plan-refresh.js";
 export * from "./connect-protocol.js";
 export * from "./hosted-types.js";

@@ -1,5 +1,8 @@
 import { type JSX } from "react";
-import type { ConnectModel, Connection } from "../connect-protocol.js";
+import type { ConnectModel, ConnectNotice, Connection } from "../connect-protocol.js";
+export declare function DisconnectNotice(properties: {
+    readonly notice: ConnectNotice;
+}): JSX.Element;
 export declare function StatusNotice(properties: {
     readonly message: string;
     readonly onRetry?: () => void;

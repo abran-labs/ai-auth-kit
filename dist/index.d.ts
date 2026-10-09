@@ -3,10 +3,12 @@ export { CatalogRuntime, type CatalogRefreshOptions, type CatalogRuntimeOptions,
 export { type AccountOAuthDeps, type AccountOAuthLoginPrompts, loginAccountOAuthProvider, loginGitHubCopilotAccount, loginOpenAiAccount, } from "./account-oauth.js";
 export { loginChatGptPlan, signOutChatGptPlan, type ChatGptPlanLoginDeps, type ChatGptPlanLoginPrompts, type ChatGptPlanSignOutResult, } from "./account-oauth-chatgpt.js";
 export { CHATGPT_AUTHORIZE_URL, CHATGPT_CALLBACK_PATH, CHATGPT_DEFAULT_CALLBACK_PORT, CHATGPT_DYNAMIC_CLIENT_ID, CHATGPT_ISSUER, CHATGPT_PLAN_RESOURCE, CHATGPT_PLAN_SCOPE, CHATGPT_PLAN_SCOPES, CHATGPT_REVOKE_URL, CHATGPT_TOKEN_URL, type ChatGptAuthorization, type ChatGptAuthorizationRequest, type ChatGptCallbackResult, type ChatGptExchangeInput, type ChatGptIdentity, type ChatGptPendingAuthorization, ChatGptPlanError, type ChatGptPlanErrorCode, type ChatGptPlanTokens, type ChatGptRefreshInput, type ChatGptSignIn, createChatGptHostId, exchangeChatGptCode, isChatGptHostId, parseChatGptCallback, refreshChatGptTokens, revokeChatGptSession, startChatGptAuthorization, } from "./chatgpt-plan.js";
-export { CHATGPT_JWKS_URL, type ChatGptIdTokenCheck, resetChatGptSigningKeysForTests, verifyChatGptIdToken, } from "./chatgpt-plan-id-token.js";
-export { CHATGPT_PLAN_ADAPTER, type ChatGptPlanMetadata, type ChatGptPlanSecretRefs, chatGptPlanMetadata, chatGptPlanSecretRefs, CLIPROXYAPI_ACCOUNT_ADAPTER, parseChatGptPlanMetadata, } from "./chatgpt-plan-credential.js";
+export { type ChatGptPlanNotGrantedCause, planNotGrantedCause, } from "./chatgpt-plan-scope.js";
+export { CHATGPT_JWKS_URL, type ChatGptIdTokenCheck, verifyChatGptIdToken, } from "./chatgpt-plan-id-token.js";
+export { CHATGPT_PLAN_ADAPTER, type ChatGptPlanDisabledRegistration, type ChatGptPlanMetadata, type ChatGptPlanSecretRefs, chatGptPlanDisabledMetadata, chatGptPlanMetadata, chatGptPlanSecretRefs, CLIPROXYAPI_ACCOUNT_ADAPTER, parseChatGptPlanMetadata, } from "./chatgpt-plan-credential.js";
+export { CHATGPT_PLAN_MODELS_URL, type ChatGptPlanModelsInput, listChatGptPlanModels, } from "./chatgpt-plan-models.js";
 export { type ChatGptCallbackOutcome, type ChatGptLoopback, startChatGptLoopback, } from "./chatgpt-plan-loopback.js";
-export { CHATGPT_PLAN_REFRESH_WINDOW_MS, type ChatGptPlanAccess, type ChatGptPlanRefreshContext, ensureChatGptPlanAccess, } from "./chatgpt-plan-refresh.js";
+export { CHATGPT_PLAN_REFRESH_WINDOW_MS, type ChatGptPlanAccess, type ChatGptPlanLock, type ChatGptPlanRefreshContext, type ChatGptPlanTokenWrite, ensureChatGptPlanAccess, isSameChatGptGeneration, } from "./chatgpt-plan-refresh.js";
 export * from "./connect-protocol.js";
 export * from "./hosted-types.js";
 export { CLIPROXYAPI_LATEST_RELEASE_URL, CLIPROXYAPI_REPO, type CliProxyApiLoginDeps, type CliProxyApiLoginResult, type CliProxyApiProvisionDeps, type CliProxyApiProvisionResult, provisionCliProxyApi, provisionCliProxyApiForProvider, runCliProxyApiLogin, } from "./cliproxyapi.js";

@@ -1,7 +1,7 @@
 import { refreshOpenAiCodexToken } from "./account-oauth.js";
 import { CHATGPT_PLAN_RESOURCE } from "./chatgpt-plan.js";
 import { parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
-import { ensureChatGptPlanAccess } from "./chatgpt-plan-refresh.js";
+import { ensureChatGptPlanAccess, type ChatGptPlanTokenWrite } from "./chatgpt-plan-refresh.js";
 import { CHATGPT_USAGE_URL } from "./connect-protocol.js";
 import type { AuthKitStorage, ExternalOAuthCredential, ProviderDefinition, RuntimeAuth, RuntimePlanUsage, StoredCredential } from "./types.js";
 
@@ -17,7 +17,8 @@ type RuntimeAuthContext = {
   readonly provider: ProviderDefinition;
   readonly credential: StoredCredential | undefined;
   readonly secrets: AuthKitStorage["secrets"];
-  readonly updateCredential: (credential: ExternalOAuthCredential) => Promise<void>;
+  readonly updateCredential: (credential: ExternalOAuthCredential, tokens?: ChatGptPlanTokenWrite) => Promise<void>;
+  readonly readCurrent?: () => Promise<ExternalOAuthCredential | undefined>;
 };
 
 function needsRefresh(metadata: Readonly<Record<string, string>>): boolean {
@@ -31,6 +32,7 @@ async function resolveChatGptPlanAuth(context: RuntimeAuthContext, credential: E
     credential,
     secrets: context.secrets,
     save: context.updateCredential,
+    ...(context.readCurrent === undefined ? {} : { readCurrent: context.readCurrent }),
   });
   if (access.kind === "reconnect-required") {
     return {

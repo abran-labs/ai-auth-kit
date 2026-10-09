@@ -103,6 +103,7 @@ export declare const ConnectStatusSchema: z.ZodReadonly<z.ZodObject<{
         modelName: z.ZodString;
     }, z.core.$strip>>>;
 }, z.core.$strip>>;
+export declare const ConnectNoticeSchema: z.ZodLiteral<"remote-revocation-unconfirmed">;
 export declare const ConnectStepSchema: z.ZodDiscriminatedUnion<[z.ZodReadonly<z.ZodObject<{
     kind: z.ZodLiteral<"secret-input">;
     flowId: z.ZodString;
@@ -195,6 +196,7 @@ export declare const ConnectErrorCodeSchema: z.ZodEnum<{
     callback_invalid: "callback_invalid";
     access_denied: "access_denied";
     plan_not_granted: "plan_not_granted";
+    identity_mismatch: "identity_mismatch";
     upstream_unavailable: "upstream_unavailable";
     invalid_request: "invalid_request";
     unknown_provider: "unknown_provider";
@@ -256,6 +258,7 @@ export declare const ConnectResponseSchema: z.ZodDiscriminatedUnion<[z.ZodReadon
             modelName: z.ZodString;
         }, z.core.$strip>>>;
     }, z.core.$strip>>;
+    notice: z.ZodOptional<z.ZodLiteral<"remote-revocation-unconfirmed">>;
 }, z.core.$strip>>, z.ZodReadonly<z.ZodObject<{
     kind: z.ZodLiteral<"step">;
     step: z.ZodDiscriminatedUnion<[z.ZodReadonly<z.ZodObject<{
@@ -321,6 +324,7 @@ export declare const ConnectResponseSchema: z.ZodDiscriminatedUnion<[z.ZodReadon
         callback_invalid: "callback_invalid";
         access_denied: "access_denied";
         plan_not_granted: "plan_not_granted";
+        identity_mismatch: "identity_mismatch";
         upstream_unavailable: "upstream_unavailable";
         invalid_request: "invalid_request";
         unknown_provider: "unknown_provider";
@@ -345,6 +349,7 @@ export type ConnectUsage = z.output<typeof ConnectUsageSchema>;
 export type Connection = z.output<typeof ConnectionSchema>;
 export type SelectedModelSummary = z.output<typeof SelectedModelSummarySchema>;
 export type ConnectStatus = z.output<typeof ConnectStatusSchema>;
+export type ConnectNotice = z.output<typeof ConnectNoticeSchema>;
 export type ConnectStep = z.output<typeof ConnectStepSchema>;
 export type ConnectRequest = z.output<typeof ConnectRequestSchema>;
 export type ConnectErrorCode = z.output<typeof ConnectErrorCodeSchema>;

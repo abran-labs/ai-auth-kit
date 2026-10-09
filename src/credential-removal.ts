@@ -1,6 +1,6 @@
 import type { AuthKitState, AuthKitStore, SecretStore, StoredCredential } from "./types.js";
 
-type RemovalDependencies = { readonly secrets: SecretStore; readonly state: AuthKitState; readonly store: AuthKitStore; };
+type RemovalDependencies = { readonly secrets: SecretStore; readonly state: AuthKitState; readonly store: AuthKitStore; readonly onStateCommitted?: () => void; };
 
 export class CredentialRemovalError extends Error {
   readonly name = "CredentialRemovalError";
@@ -34,7 +34,7 @@ function removedState(state: AuthKitState, providerId: string): AuthKitState {
 export async function removeCredentialTransaction(dependencies: RemovalDependencies, providerId: string): Promise<void> {
   const next = removedState(dependencies.state, providerId);
   await dependencies.store.write(next);
-  if (process.env.AI_AUTH_KIT_INTERRUPT_AT === "state-commit-sigkill") process.kill(process.pid, "SIGKILL");
+  await dependencies.onStateCommitted?.();
   try {
     await dependencies.secrets.reconcile(liveSecretRefs(next));
   } catch (error) {

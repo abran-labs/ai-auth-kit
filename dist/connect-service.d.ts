@@ -4,6 +4,7 @@ import { type ReportFailure } from "./connect-runtime.js";
 import { type ConnectResponse } from "./connect-protocol.js";
 import type { HostedTenantStore, PendingFlowStore } from "./hosted-store.js";
 import { type ConnectionRuntime, type ProxyAccountConnector } from "./hosted-types.js";
+import type { ChatGptPlanLock } from "./chatgpt-plan-refresh.js";
 import type { AuthFetch, ProviderDefinition } from "./types.js";
 export type { ReportFailure };
 export interface ChatGptPlanHostOptions {
@@ -22,6 +23,7 @@ export interface ConnectServiceOptions {
     readonly proxyAccounts?: ProxyAccountConnector;
     readonly fetch?: AuthFetch;
     readonly now?: () => number;
+    readonly lock?: ChatGptPlanLock;
     readonly catalog?: CatalogRuntimeOptions;
     readonly validateApiKey?: (providerId: string, key: string) => Promise<ApiKeyVerdict>;
 }

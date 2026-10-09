@@ -1,7 +1,7 @@
-import { revokeChatGptSession } from "./chatgpt-plan.js";
+import { revokeChatGptSession, ChatGptPlanError } from "./chatgpt-plan.js";
 import { CHATGPT_PLAN_ADAPTER, CLIPROXYAPI_ACCOUNT_ADAPTER } from "./chatgpt-plan-credential.js";
 import { ConnectError } from "./connect-flow-state.js";
-import { filterChatGptPlanModels, hostedApiKeyBaseUrl, pickDefaultModel, proxyBindingFrom, providerConnection, summarizeStatus, } from "./connect-runtime.js";
+import { chatGptPlanModelsForTenant, filterChatGptPlanModels, hostedApiKeyBaseUrl, pickDefaultModel, proxyBindingFrom, providerConnection, summarizeStatus, } from "./connect-runtime.js";
 import { ProxyAccountError } from "./hosted-types.js";
 function toConnectModel(model) {
     return {
@@ -70,9 +70,22 @@ export async function modelsFor(context, tenantId, providerId) {
         }
     }
     const catalogModels = credential?.type === "oauth-external" && credential.metadata.adapter === CHATGPT_PLAN_ADAPTER && provider.id === "openai"
-        ? filterChatGptPlanModels(provider.models)
+        ? await chatGptPlanModels(provider, tenantId, context)
         : provider.models;
     return catalogModels.map(toConnectModel);
+}
+async function chatGptPlanModels(provider, tenantId, context) {
+    try {
+        const live = await chatGptPlanModelsForTenant({ kit: context.kitFor(tenantId), providerId: provider.id, fetch: context.fetch });
+        if (live !== undefined && live.length > 0) {
+            return live.map((model) => ({ id: model.id, name: model.name }));
+        }
+    }
+    catch (error) {
+        if (!(error instanceof ChatGptPlanError))
+            throw error;
+    }
+    return filterChatGptPlanModels(provider.models);
 }
 export async function readConnection(context, tenantId, providerId) {
     const provider = context.findProvider(providerId);
@@ -131,18 +144,27 @@ export async function disconnectOp(context, tenantId, providerId) {
     const credential = await kit.getCredential(provider.id);
     if (credential === undefined)
         throw new ConnectError("not_connected", `No ${provider.name} connection. Connect first.`, false);
+    let notice;
     if (credential.type === "oauth-external" && credential.metadata.adapter === CHATGPT_PLAN_ADAPTER) {
         const clientId = credential.metadata.clientId;
         const refreshRef = credential.metadata.refreshTokenRef;
         const refreshToken = refreshRef === undefined ? undefined : await kit.secrets.get(refreshRef);
+        let confirmed = clientId === undefined || refreshToken === undefined;
         if (clientId !== undefined && refreshToken !== undefined) {
-            await revokeChatGptSession({ clientId, refreshToken, ...(context.fetch === undefined ? {} : { fetch: context.fetch }) }).catch(() => false);
+            confirmed = await revokeChatGptSession({ clientId, refreshToken, ...(context.fetch === undefined ? {} : { fetch: context.fetch }) }).catch(() => false);
         }
+        if (!confirmed)
+            notice = "remote-revocation-unconfirmed";
     }
     if (credential.type === "oauth-external" && credential.metadata.adapter === CLIPROXYAPI_ACCOUNT_ADAPTER) {
         const binding = proxyBindingFrom(credential.metadata);
         if (binding !== undefined) {
-            await context.proxyAccounts?.disconnect({ tenantId, providerId: provider.id }, binding).catch(() => undefined);
+            try {
+                await context.proxyAccounts?.disconnect({ tenantId, providerId: provider.id }, binding);
+            }
+            catch (error) {
+                throw new ConnectError("upstream_unavailable", "The sign-in service is unavailable. Try again.", true, { cause: error });
+            }
         }
     }
     await kit.removeCredential(provider.id);
@@ -150,6 +172,7 @@ export async function disconnectOp(context, tenantId, providerId) {
     if (state.selectedModel?.providerId === provider.id) {
         await kit.store.write({ ...state, selectedModel: undefined, updatedAt: new Date().toISOString() });
     }
-    return statusFor(context, tenantId);
+    const status = summarizeStatus(context.currentProviders(), await kit.readState());
+    return notice === undefined ? { kind: "status", status } : { kind: "status", status, notice };
 }
 //# sourceMappingURL=connect-ops.js.map

@@ -145,8 +145,7 @@ export function useConnect(transport, options) {
         if (!mounted.current)
             return;
         if (response.kind === "status") {
-            dispatch({ kind: "disconnected" });
-            await refresh();
+            dispatch({ kind: "disconnected", status: response.status, ...(response.notice === undefined ? {} : { notice: response.notice }) });
             return;
         }
         const failure = responseFailure(response);

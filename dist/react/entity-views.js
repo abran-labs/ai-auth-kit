@@ -1,5 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useId } from "react";
+export function DisconnectNotice(properties) {
+    if (properties.notice !== "remote-revocation-unconfirmed")
+        return _jsx("span", { "data-aak-notice": "" });
+    return (_jsxs("div", { "data-aak-notice": "remote-revocation-unconfirmed", role: "status", children: [_jsx("span", { children: "Signed out here. To fully disconnect, remove Orbi in ChatGPT Settings \u2192 Security \u2192 Sign in with ChatGPT." }), " ", _jsx("a", { "data-aak-notice-link": "", href: "https://chatgpt.com/#settings/Security", children: "Open ChatGPT security settings" })] }));
+}
 export function StatusNotice(properties) {
     return (_jsxs("div", { "data-aak-error": "", role: "alert", children: [_jsx("span", { children: properties.message }), properties.retryable && properties.onRetry !== undefined ? (_jsx("button", { "data-aak-retry": "", onClick: properties.onRetry, type: "button", children: "Retry" })) : null] }));
 }

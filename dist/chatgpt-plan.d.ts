@@ -2,6 +2,7 @@ import { z } from "zod";
 import { type ChatGptIdentity } from "./chatgpt-plan-id-token.js";
 import type { AuthFetch } from "./types.js";
 export { CHATGPT_ISSUER, ChatGptPlanError, type ChatGptIdentity, type ChatGptPlanErrorCode } from "./chatgpt-plan-id-token.js";
+export { planNotGrantedCause, type ChatGptPlanNotGrantedCause } from "./chatgpt-plan-scope.js";
 export declare const CHATGPT_AUTHORIZE_URL = "https://auth.openai.com/api/accounts/authorize";
 export declare const CHATGPT_TOKEN_URL = "https://auth.openai.com/api/accounts/oauth/token";
 export declare const CHATGPT_REVOKE_URL = "https://auth.openai.com/api/accounts/oauth/revoke";
@@ -25,6 +26,7 @@ export interface ChatGptAuthorizationRequest {
     readonly agentName: string;
     readonly hostId: string;
     readonly clientId?: string;
+    readonly idTokenHint?: string;
     readonly port?: number;
     readonly loginHint?: string;
     readonly now?: number;
@@ -46,6 +48,7 @@ export interface ChatGptPlanTokens {
 }
 export interface ChatGptSignIn extends ChatGptPlanTokens {
     readonly identity: ChatGptIdentity;
+    readonly idToken: string;
 }
 export interface ChatGptExchangeInput {
     readonly code: string;

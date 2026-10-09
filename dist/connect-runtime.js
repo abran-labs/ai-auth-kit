@@ -1,6 +1,7 @@
 import { CHATGPT_PLAN_RESOURCE } from "./chatgpt-plan.js";
-import { CHATGPT_PLAN_ADAPTER, CLIPROXYAPI_ACCOUNT_ADAPTER } from "./chatgpt-plan-credential.js";
-import { ensureChatGptPlanAccess } from "./chatgpt-plan-refresh.js";
+import { CHATGPT_PLAN_ADAPTER, CLIPROXYAPI_ACCOUNT_ADAPTER, parseChatGptPlanMetadata } from "./chatgpt-plan-credential.js";
+import { listChatGptPlanModels } from "./chatgpt-plan-models.js";
+import { ensureChatGptPlanAccess, isSameChatGptGeneration } from "./chatgpt-plan-refresh.js";
 import { CHATGPT_USAGE_URL } from "./connect-protocol.js";
 import { AuthKit } from "./kit.js";
 export const PROXY_POLL_AFTER_MS = 2_000;
@@ -85,6 +86,26 @@ export function pickDefaultModel(models) {
         return toolCapable;
     return models.find((model) => model.tags?.includes("active") === true) ?? models[0];
 }
+function saveChatGptPlanCredential(kit, providerId) {
+    return (next, tokens) => kit.runExclusive(async () => {
+        const state = await kit.store.read();
+        const live = state.credentials[providerId];
+        if (live?.type !== "oauth-external" || !isSameChatGptGeneration(live, next))
+            return;
+        if (tokens !== undefined) {
+            await kit.secrets.set(tokens.accessTokenRef, tokens.accessToken);
+            await kit.secrets.set(tokens.refreshTokenRef, tokens.refreshToken);
+        }
+        await kit.store.write({ ...state, credentials: { ...state.credentials, [providerId]: next }, updatedAt: new Date().toISOString() });
+    });
+}
+function readChatGptPlanCredential(kit, providerId) {
+    return async () => {
+        const state = await kit.store.read();
+        const live = state.credentials[providerId];
+        return live?.type === "oauth-external" ? live : undefined;
+    };
+}
 export async function resolveConnectionRuntime(deps) {
     const state = await deps.kit.readState();
     const selected = state.selectedModel;
@@ -115,10 +136,9 @@ export async function resolveConnectionRuntime(deps) {
             key: `${deps.tenantId}:openai`,
             credential,
             secrets: deps.kit.secrets,
-            save: async (next) => {
-                const current = await deps.kit.store.read();
-                await deps.kit.store.write({ ...current, credentials: { ...current.credentials, [selected.providerId]: next } });
-            },
+            save: saveChatGptPlanCredential(deps.kit, selected.providerId),
+            readCurrent: readChatGptPlanCredential(deps.kit, selected.providerId),
+            ...(deps.lock === undefined ? {} : { lock: deps.lock }),
             ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
             now: deps.now,
         });
@@ -136,6 +156,29 @@ export async function resolveConnectionRuntime(deps) {
         return { providerId: selected.providerId, modelId: route.model, wire: route.wire, baseUrl: route.baseUrl, headers: { ...route.headers } };
     }
     return undefined;
+}
+export async function chatGptPlanModelsForTenant(deps) {
+    const credential = await deps.kit.getCredential(deps.providerId);
+    if (credential?.type !== "oauth-external")
+        return undefined;
+    const metadata = parseChatGptPlanMetadata(credential.metadata);
+    if (metadata === undefined || metadata.accessTokenRef === undefined || metadata.refreshTokenRef === undefined)
+        return undefined;
+    const access = await ensureChatGptPlanAccess({
+        key: `chatgpt-plan-models:${deps.providerId}`,
+        credential,
+        secrets: deps.kit.secrets,
+        save: saveChatGptPlanCredential(deps.kit, deps.providerId),
+        readCurrent: readChatGptPlanCredential(deps.kit, deps.providerId),
+        ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+    });
+    if (access.kind !== "ready")
+        return undefined;
+    const models = await listChatGptPlanModels({
+        accessToken: access.accessToken,
+        ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+    });
+    return models.map((model) => ({ id: model.id, name: model.name }));
 }
 export function proxyBindingFrom(metadata) {
     const credentialName = metadata.credentialName;

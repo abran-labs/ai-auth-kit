@@ -48,6 +48,7 @@ export const ConnectStatusSchema = z.object({
     connections: z.array(ConnectionSchema).readonly(),
     selectedModel: SelectedModelSummarySchema.optional(),
 }).readonly();
+export const ConnectNoticeSchema = z.literal("remote-revocation-unconfirmed");
 export const ConnectStepSchema = z.discriminatedUnion("kind", [
     z.object({
         kind: z.literal("secret-input"),
@@ -110,6 +111,7 @@ export const ConnectErrorCodeSchema = z.enum([
     "plan_not_granted",
     "credential_rejected",
     "account_in_use",
+    "identity_mismatch",
     "not_connected",
     "unknown_model",
     "upstream_unavailable",
@@ -117,7 +119,7 @@ export const ConnectErrorCodeSchema = z.enum([
 ]);
 export const ConnectResponseSchema = z.discriminatedUnion("kind", [
     z.object({ kind: z.literal("providers"), providers: z.array(ConnectProviderSchema).readonly() }).readonly(),
-    z.object({ kind: z.literal("status"), status: ConnectStatusSchema }).readonly(),
+    z.object({ kind: z.literal("status"), status: ConnectStatusSchema, notice: ConnectNoticeSchema.optional() }).readonly(),
     z.object({ kind: z.literal("step"), step: ConnectStepSchema }).readonly(),
     z.object({ kind: z.literal("models"), providerId: IdSchema, models: z.array(ConnectModelSchema).readonly() }).readonly(),
     z.object({ kind: z.literal("cancelled") }).readonly(),

@@ -9,6 +9,7 @@ import { parseConnectRequest, type ConnectMethod, type ConnectResponse } from ".
 import type { HostedTenantStore, PendingFlowStore } from "./hosted-store.js";
 import { ProxyAccountError, type ConnectionRuntime, type ProxyAccountConnector } from "./hosted-types.js";
 import { AuthKit } from "./kit.js";
+import type { ChatGptPlanLock } from "./chatgpt-plan-refresh.js";
 import type { AuthFetch, ProviderDefinition } from "./types.js";
 
 export type { ReportFailure };
@@ -33,6 +34,7 @@ export interface ConnectServiceOptions {
   readonly proxyAccounts?: ProxyAccountConnector;
   readonly fetch?: AuthFetch;
   readonly now?: () => number;
+  readonly lock?: ChatGptPlanLock;
   readonly catalog?: CatalogRuntimeOptions;
   readonly validateApiKey?: (providerId: string, key: string) => Promise<ApiKeyVerdict>;
 }
@@ -142,7 +144,7 @@ export function createConnectService(options: ConnectServiceOptions): ConnectSer
     async runtime(tenantId: string): Promise<ConnectionRuntime | undefined> {
       if (tenantId.trim().length === 0) return undefined;
       try {
-        return await resolveConnectionRuntime({ kit: kitFor(tenantId), tenantId, proxyAccounts: options.proxyAccounts, fetch: options.fetch, now });
+        return await resolveConnectionRuntime({ kit: kitFor(tenantId), tenantId, proxyAccounts: options.proxyAccounts, fetch: options.fetch, now, ...(options.lock === undefined ? {} : { lock: options.lock }) });
       } catch (error) {
         if (error instanceof ChatGptPlanError || error instanceof ProxyAccountError) return undefined;
         throw error;

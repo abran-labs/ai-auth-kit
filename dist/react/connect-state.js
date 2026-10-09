@@ -19,6 +19,7 @@ export function connectReducer(state, action) {
             return {
                 ...state,
                 error: undefined,
+                notice: undefined,
                 phase: "idle",
                 providers: action.providers,
                 retryable: false,
@@ -124,9 +125,11 @@ export function connectReducer(state, action) {
                 error: undefined,
                 models: [],
                 modelsProviderId: undefined,
+                notice: action.notice,
                 phase: "idle",
                 provider: undefined,
                 retryable: false,
+                status: action.status,
                 step: undefined,
                 working: false,
             };

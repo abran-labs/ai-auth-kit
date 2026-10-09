@@ -7,6 +7,7 @@ export declare class AuthKit {
     private currentProviders;
     private providerIndex;
     private readonly catalog;
+    private lockTail;
     constructor(options: AuthKitOptions);
     get providers(): readonly ProviderDefinition[];
     ready(): Promise<CatalogStatus | undefined>;
@@ -20,9 +21,10 @@ export declare class AuthKit {
     listModels(providerId: string): readonly ModelDefinition[];
     getModel(providerId: string, modelId: string): ModelDefinition;
     readState(): Promise<AuthKitState>;
+    runExclusive<T>(action: () => Promise<T>): Promise<T>;
     saveApiKey(providerId: string, apiKey: string): Promise<StoredCredential>;
     saveEnvCredential(providerId: string, envVar?: string): Promise<EnvCredential>;
-    saveExternalOAuth(providerId: string, metadata?: Readonly<Record<string, string>>): Promise<ExternalOAuthCredential>;
+    saveExternalOAuth(providerId: string, metadata?: Readonly<Record<string, string>>, secretsToSet?: ReadonlyArray<readonly [string, string]>): Promise<ExternalOAuthCredential>;
     saveNoAuth(providerId: string): Promise<NoAuthCredential>;
     removeCredential(providerId: string): Promise<void>;
     getCredential(providerId: string): Promise<StoredCredential | undefined>;

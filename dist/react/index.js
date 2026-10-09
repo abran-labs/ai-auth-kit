@@ -1,7 +1,7 @@
 export { ConnectPanel } from "./ConnectPanel.js";
 export { FlowView } from "./connect-flow.js";
 export { connectReducer, hasApiKeyMethod, hasChatgptPlanMethod, initialConnectState, readStepConnection, responseError, responseFailure, visibleProviders, } from "./connect-state.js";
-export { ConnectionCard, ModelPickerView, StatusNotice } from "./entity-views.js";
+export { ConnectionCard, DisconnectNotice, ModelPickerView, StatusNotice } from "./entity-views.js";
 export { FeaturedActions } from "./featured-providers.js";
 export { MethodList, ProviderCatalog } from "./provider-catalog.js";
 export { ConfirmRiskView, RedirectPasteView, SecretStepView, WorkingView, } from "./step-views.js";

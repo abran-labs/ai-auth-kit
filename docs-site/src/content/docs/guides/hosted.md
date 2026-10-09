@@ -60,4 +60,13 @@ The in-memory stores suit tests and simple hosts. Production hosts implement two
   load. That failure is expected; the user copies the full address-bar URL and pastes it back into
   the dashboard.
 
+## Rotating refresh tokens across processes
+
+ChatGPT plan refresh tokens rotate: each refresh issues a replacement, and reusing an old one can
+end the session. Run a single refresher per tenant session across processes. `createConnectService`
+accepts an optional `lock(key, run)` hook (default: in-process only) that wraps refresh plus save,
+so hosts with several processes can plug a distributed lock (for example a database advisory lock
+scoped by tenant). After acquiring the lock the service re-reads the credential, so a process that
+lost the race uses the newer token instead of refreshing again.
+
 See also the [security reference](../../reference/security/).

@@ -111,7 +111,7 @@ export function createConnectService(options) {
             if (tenantId.trim().length === 0)
                 return undefined;
             try {
-                return await resolveConnectionRuntime({ kit: kitFor(tenantId), tenantId, proxyAccounts: options.proxyAccounts, fetch: options.fetch, now });
+                return await resolveConnectionRuntime({ kit: kitFor(tenantId), tenantId, proxyAccounts: options.proxyAccounts, fetch: options.fetch, now, ...(options.lock === undefined ? {} : { lock: options.lock }) });
             }
             catch (error) {
                 if (error instanceof ChatGptPlanError || error instanceof ProxyAccountError)

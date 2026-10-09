@@ -1,6 +1,7 @@
 import type {
 	ConnectMethod,
 	ConnectModel,
+	ConnectNotice,
 	ConnectProvider,
 	ConnectResponse,
 	ConnectStatus,
@@ -21,6 +22,7 @@ export interface ConnectState {
 	readonly modelFilter: string;
 	readonly models: readonly ConnectModel[];
 	readonly modelsProviderId?: string;
+	readonly notice?: ConnectNotice;
 	readonly phase: ConnectPhase;
 	readonly provider?: ConnectProvider;
 	readonly providers: readonly ConnectProvider[];
@@ -57,7 +59,7 @@ export type ConnectAction =
 	| { readonly kind: "models-failed"; readonly message: string; readonly retryable: boolean }
 	| { readonly kind: "open-models"; readonly providerId: string }
 	| { readonly kind: "model-selected" }
-	| { readonly kind: "disconnected" }
+	| { readonly kind: "disconnected"; readonly status: ConnectStatus; readonly notice?: ConnectNotice }
 	| { readonly kind: "clear-error" };
 
 export const initialConnectState: ConnectState = {
@@ -83,6 +85,7 @@ export function connectReducer(state: ConnectState, action: ConnectAction): Conn
 			return {
 				...state,
 				error: undefined,
+				notice: undefined,
 				phase: "idle",
 				providers: action.providers,
 				retryable: false,
@@ -188,9 +191,11 @@ export function connectReducer(state: ConnectState, action: ConnectAction): Conn
 				error: undefined,
 				models: [],
 				modelsProviderId: undefined,
+				notice: action.notice,
 				phase: "idle",
 				provider: undefined,
 				retryable: false,
+				status: action.status,
 				step: undefined,
 				working: false,
 			};

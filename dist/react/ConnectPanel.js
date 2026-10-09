@@ -2,7 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from "react";
 import { visibleProviders } from "./connect-state.js";
 import { FlowView } from "./connect-flow.js";
-import { ConnectionCard, ModelPickerView, StatusNotice } from "./entity-views.js";
+import { ConnectionCard, DisconnectNotice, ModelPickerView, StatusNotice } from "./entity-views.js";
 import { FeaturedActions } from "./featured-providers.js";
 import { MethodList, ProviderCatalog } from "./provider-catalog.js";
 import { useConnect } from "./use-connect.js";
@@ -44,7 +44,7 @@ export function ConnectPanel(properties) {
         state.phase === "method" ||
         state.phase === "step" ||
         state.phase === "models";
-    return (_jsxs("section", { className: properties.className ?? "aak-connect", "data-aak-panel": "", children: [_jsx("h2", { "data-aak-title": "", children: properties.title ?? "Connect AI" }), _jsx("div", { "aria-live": "polite", "data-aak-status": "", children: liveMessage }), state.error === undefined ? null : (_jsx(StatusNotice, { message: state.error, onRetry: state.retryable ? () => void controller.refresh() : undefined, retryable: state.retryable })), state.phase === "loading" ? _jsx("span", { "data-aak-loading": "", children: "Loading" }) : null, state.status === undefined ? null : (_jsx("div", { "data-aak-connections": "", children: state.status.connections.map((connection) => (_jsx(ConnectionCard, { connection: connection, needsConfirm: confirmDisconnect === connection.providerId, onCancelDisconnect: () => {
+    return (_jsxs("section", { className: properties.className ?? "aak-connect", "data-aak-panel": "", children: [_jsx("h2", { "data-aak-title": "", children: properties.title ?? "Connect AI" }), _jsx("div", { "aria-live": "polite", "data-aak-status": "", children: liveMessage }), state.error === undefined ? null : (_jsx(StatusNotice, { message: state.error, onRetry: state.retryable ? () => void controller.refresh() : undefined, retryable: state.retryable })), state.notice === undefined ? null : _jsx(DisconnectNotice, { notice: state.notice }), state.phase === "loading" ? _jsx("span", { "data-aak-loading": "", children: "Loading" }) : null, state.status === undefined ? null : (_jsx("div", { "data-aak-connections": "", children: state.status.connections.map((connection) => (_jsx(ConnectionCard, { connection: connection, needsConfirm: confirmDisconnect === connection.providerId, onCancelDisconnect: () => {
                         setConfirmDisconnect(undefined);
                     }, onChangeModel: (providerId) => void controller.loadModels(providerId), onDisconnect: (providerId) => {
                         if (confirmDisconnect === providerId) {

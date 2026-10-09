@@ -26,8 +26,7 @@ function removedState(state, providerId) {
 export async function removeCredentialTransaction(dependencies, providerId) {
     const next = removedState(dependencies.state, providerId);
     await dependencies.store.write(next);
-    if (process.env.AI_AUTH_KIT_INTERRUPT_AT === "state-commit-sigkill")
-        process.kill(process.pid, "SIGKILL");
+    await dependencies.onStateCommitted?.();
     try {
         await dependencies.secrets.reconcile(liveSecretRefs(next));
     }
