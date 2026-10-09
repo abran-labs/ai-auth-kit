@@ -67,6 +67,16 @@ test("Given management status codes, when requests fail, then codes map without 
   }
 });
 
+test("Given a stored credential, when downloading, then the routing prefix is exposed", async () => {
+  const api = client(async (input) => {
+    const url = new URL(input);
+    if (url.searchParams.get("name") === "claude-missing.json") return json({ error: "file not found" }, 404);
+    return json({ type: "claude", email: "u@example.com", prefix: "t123", metadata: {} });
+  });
+  expect(await api.downloadCredential("claude-x.json")).toEqual({ prefix: "t123" });
+  await expectCode(api.downloadCredential("claude-missing.json"), "not_found");
+});
+
 test("Given a network failure, when requesting, then the error stays typed and key-free", async () => {
   const api = client(async () => { throw new Error(`boom ${KEY}`); });
   const error = await expectCode(api.listCredentials(), "upstream_unavailable");

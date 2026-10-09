@@ -100,15 +100,18 @@ export { renderCliProxyServerConfig, type CliProxyServerConfigOptions } from "./
 export {
 	CLIPROXY_CALLBACK_PREFIX,
 	createCliProxyAccountConnector,
+	createMemoryLoginSlot,
 	defaultCliProxyRoutePrefix,
 	getCliProxyHostedWarning,
 	type CliProxyAccountConnectorOptions,
 	type CliProxyAccountProvider,
+	type CliProxyLoginSlot,
 } from "./cliproxyapi-connector.js";
 export {
 	CliProxyManagementError,
 	createCliProxyManagementClient,
 	type CliProxyAuthUrl,
+	type CliProxyCredentialDownload,
 	type CliProxyCredentialFile,
 	type CliProxyCredentialModel,
 	type CliProxyManagementClient,

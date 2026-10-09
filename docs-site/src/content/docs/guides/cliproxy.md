@@ -47,5 +47,21 @@ v8 server config.
 - `routing.force-model-prefix: true` keeps unprefixed requests off tenant credentials.
 - One Claude account maps to one tenant: credential filenames derive from account identity, so a
   repeat connect with the same account yields `account_in_use` instead of sharing the file.
+- One login at a time per proxy: the connector holds a global login slot while a Claude login
+  is in flight, and `start` returns `login_busy` when another tenant's login is active. The host
+  should surface that as "try again shortly". The default slot store is process-local; hosts
+  running several processes must inject a shared `loginSlot` store (same shape as
+  `createMemoryLoginSlot`), otherwise concurrent logins in different processes can bind or
+  re-prefix each other's credential file.
+- The host must be the only management client: any other writer can create credential files the
+  connector cannot attribute, and a second `start` path bypasses the slot. Files whose stored
+  `prefix` belongs to another tenant, or whose `created_at` predates the login, are refused
+  with `account_in_use` and never patched or deleted.
+- Sessions are HMAC-signed blobs (key defaults to the management key, overridable with
+  `sessionSecret`); tampered or cross-tenant session reuse is rejected. `disconnect` re-reads
+  the stored `prefix` before deleting, so a forged binding cannot remove another tenant's file.
+  Credentials connected before this hardening carry no stored prefix, so their first
+  `disconnect` is refused with `account_in_use`; reconnect the account or delete the file
+  manually through the management API.
 - Same account-terms risk as local mode: subscription automation may violate provider terms and
   get the account limited.

@@ -33,6 +33,11 @@ export interface CliProxyCredentialFile {
     readonly disabled: boolean;
     readonly unavailable?: boolean;
     readonly email?: string;
+    readonly createdAt?: string;
+    readonly updatedAt?: string;
+}
+export interface CliProxyCredentialDownload {
+    readonly prefix?: string;
 }
 export interface CliProxyCredentialModel {
     readonly id: string;
@@ -46,6 +51,7 @@ export interface CliProxyManagementClient {
     readonly oauthStatus: (state: string) => Promise<CliProxyOAuthStatusResult>;
     readonly cancelSession: (state: string) => Promise<boolean>;
     readonly listCredentials: () => Promise<readonly CliProxyCredentialFile[]>;
+    readonly downloadCredential: (name: string) => Promise<CliProxyCredentialDownload>;
     readonly deleteCredential: (name: string) => Promise<void>;
     readonly patchCredentialPrefix: (name: string, prefix: string) => Promise<void>;
     readonly credentialModels: (name: string) => Promise<readonly CliProxyCredentialModel[]>;

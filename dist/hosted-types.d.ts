@@ -42,7 +42,7 @@ export interface ProxyAccountRoute {
     readonly model: string;
     readonly wire: ConnectionWire;
 }
-export type ProxyAccountErrorCode = "account_in_use" | "flow_expired" | "callback_invalid" | "upstream_unavailable";
+export type ProxyAccountErrorCode = "account_in_use" | "flow_expired" | "callback_invalid" | "upstream_unavailable" | "login_busy";
 export declare class ProxyAccountError extends Error {
     readonly code: ProxyAccountErrorCode;
     readonly name = "ProxyAccountError";

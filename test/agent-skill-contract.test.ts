@@ -137,7 +137,7 @@ test("Given the public root module, when the self-contained API reference is che
   });
   const reference = await Bun.file(join(skillRoot, "references", "api.md")).text();
 
-  expect(exports).toHaveLength(156);
+  expect(exports).toHaveLength(159);
   for (const exportedName of exports) expect(reference).toContain(`\`${exportedName}\``);
 });
 

@@ -50,6 +50,10 @@ export function mapProxyError(error) {
             return connectErrorResponse("callback_invalid", "That address was not recognized. Paste the full callback address.", false);
         case "upstream_unavailable":
             return connectErrorResponse("upstream_unavailable", "The sign-in service is unavailable. Try again.", true);
+        case "login_busy":
+            return connectErrorResponse("upstream_unavailable", "Another workspace is signing in right now. Try again in a few minutes.", true);
+        default:
+            return assertNever(error.code);
     }
 }
 const SecretPendingSchema = z

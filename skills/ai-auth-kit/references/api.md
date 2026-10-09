@@ -171,11 +171,15 @@ optional `text` (manual redirect-URL paste for headless sessions), and `info`.
   `poll` prefix-pins the new credential file and returns the binding, or `account_in_use`
   when the same Claude account is already connected). Helpers `defaultCliProxyRoutePrefix`,
   `getCliProxyHostedWarning`, constant `CLIPROXY_CALLBACK_PREFIX`, contracts
-  `CliProxyAccountConnectorOptions` and `CliProxyAccountProvider`.
+  `CliProxyAccountConnectorOptions` and `CliProxyAccountProvider`. Only one Claude login runs
+  per proxy at a time (`login_busy` while another tenant's login is in flight); the default
+  `loginSlot` store is process-local (`createMemoryLoginSlot`, contract `CliProxyLoginSlot`).
+  Sessions are HMAC-signed (`sessionSecret`, defaults to the management key).
 - Management client: `createCliProxyManagementClient` for `/v8/management` OAuth, credential,
   and model endpoints; typed `CliProxyManagementError` (`CliProxyManagementErrorCode`);
   contracts `CliProxyManagementOptions`, `CliProxyManagementFetch`, `CliProxyManagementClient`,
-  `CliProxyAuthUrl`, `CliProxyOAuthStatusResult`, `CliProxyCredentialFile`, and
+  `CliProxyAuthUrl`, `CliProxyOAuthStatusResult`, `CliProxyCredentialFile` (with `createdAt` /
+  `updatedAt`), `CliProxyCredentialDownload` (stored routing `prefix`), and
   `CliProxyCredentialModel`.
 - Server config: `renderCliProxyServerConfig` renders a hardened v8 YAML config
   (localhost bind, local-only management, tenant client keys, `force-model-prefix`);

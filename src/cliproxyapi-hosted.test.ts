@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createCliProxyAccountConnector, defaultCliProxyRoutePrefix } from "./cliproxyapi-connector.js";
+import { createCliProxyAccountConnector, createMemoryLoginSlot, defaultCliProxyRoutePrefix } from "./cliproxyapi-connector.js";
 import type { CliProxyManagementFetch } from "./cliproxyapi-management.js";
 import { ProxyAccountError, type ProxyAccountBinding, type ProxyAccountErrorCode } from "./hosted-types.js";
 
@@ -16,7 +16,7 @@ function json(value: unknown, status = 200): Response {
 }
 
 function entry(file: FakeFile): unknown {
-  return { id: file.name, auth_index: "idx", name: file.name, type: "claude", provider: "claude", label: file.name, status: "active", disabled: false, email: file.email };
+  return { id: file.name, auth_index: "idx", name: file.name, type: "claude", provider: "claude", label: file.name, status: "active", disabled: false, email: file.email, created_at: new Date(NOW).toISOString() };
 }
 
 function createFake(initial: readonly FakeFile[] = []): {
@@ -24,10 +24,12 @@ function createFake(initial: readonly FakeFile[] = []): {
   readonly files: FakeFile[];
   readonly sessions: Map<string, FakeSession>;
   readonly patched: { readonly name: string; readonly prefix: string }[];
+  readonly seen: { lastState: string };
 } {
   const files: FakeFile[] = [...initial];
   const sessions = new Map<string, FakeSession>();
   const patched: { name: string; prefix: string }[] = [];
+  const seen: { lastState: string } = { lastState: "" };
   let sequence = 0;
   const fetch: CliProxyManagementFetch = async (input, init) => {
     const url = new URL(input);
@@ -39,6 +41,7 @@ function createFake(initial: readonly FakeFile[] = []): {
       if (url.searchParams.get("provider") !== "claude") return json({ error: "provider_not_found" }, 404);
       sequence += 1;
       const state = `st-${sequence}`;
+      seen.lastState = state;
       sessions.set(state, { done: false });
       return json({ status: "ok", url: `https://claude.ai/oauth?state=${state}`, state });
     }
@@ -73,6 +76,11 @@ function createFake(initial: readonly FakeFile[] = []): {
     if (method === "GET" && url.pathname === "/v8/management/credentials") {
       return json({ observed_at: "2026-01-01T00:00:00Z", files: files.map(entry) });
     }
+    if (method === "GET" && url.pathname === "/v8/management/credentials/download") {
+      const file = files.find((candidate) => candidate.name === url.searchParams.get("name"));
+      if (file === undefined) return json({ error: "auth file not found" }, 404);
+      return json({ type: "claude", email: file.email, prefix: file.prefix ?? "" });
+    }
     if (method === "DELETE" && url.pathname === "/v8/management/credentials") {
       const name = url.searchParams.get("name") ?? "";
       const index = files.findIndex((file) => file.name === name);
@@ -96,16 +104,15 @@ function createFake(initial: readonly FakeFile[] = []): {
     }
     return json({ error: "not found" }, 404);
   };
-  return { fetch, files, sessions, patched };
+  return { fetch, files, sessions, patched, seen };
 }
 
 function connector(fake: ReturnType<typeof createFake>) {
-  return createCliProxyAccountConnector({ baseUrl: BASE_URL, managementKey: MANAGEMENT_KEY, clientApiKey: CLIENT_KEY, fetch: fake.fetch, now: () => NOW });
+  return createCliProxyAccountConnector({ baseUrl: BASE_URL, managementKey: MANAGEMENT_KEY, clientApiKey: CLIENT_KEY, fetch: fake.fetch, now: () => NOW, loginSlot: createMemoryLoginSlot(() => NOW) });
 }
 
-function sessionState(session: string): string {
-  const parsed: { state: string } = JSON.parse(session);
-  return parsed.state;
+function sessionState(fake: ReturnType<typeof createFake>): string {
+  return fake.seen.lastState;
 }
 
 function redirectFor(state: string, suffix = "code=auth-code-1"): string {
@@ -116,7 +123,7 @@ async function connectedBinding(tenantId = "tenant-a"): Promise<{ fake: ReturnTy
   const fake = createFake();
   const api = connector(fake);
   const started = await api.start({ tenantId, providerId: "anthropic" });
-  const state = sessionState(started.session);
+  const state = sessionState(fake);
   expect(started.expiresAt).toBe(NOW + 5 * 60 * 1000);
   expect(started.callbackPrefix).toBe("http://localhost:54545/callback");
   expect(await api.poll({ tenantId, providerId: "anthropic", session: started.session })).toEqual({ kind: "pending" });
@@ -156,13 +163,13 @@ test("Given the same Claude account completes twice, when polling, then the seco
   const fake = createFake();
   const api = connector(fake);
   const first = await api.start({ tenantId: "tenant-a", providerId: "anthropic" });
-  await api.submitCallback({ tenantId: "tenant-a", providerId: "anthropic", session: first.session }, redirectFor(sessionState(first.session)));
+  await api.submitCallback({ tenantId: "tenant-a", providerId: "anthropic", session: first.session }, redirectFor(sessionState(fake)));
   expect((await api.poll({ tenantId: "tenant-a", providerId: "anthropic", session: first.session })).kind).toBe("connected");
   // Second tenant snapshots after the first account exists, then completes the
   // SAME Claude account: the proxy merges into the existing file, so no new
   // file appears and the tenants must not share it.
   const second = await api.start({ tenantId: "tenant-b", providerId: "anthropic" });
-  await api.submitCallback({ tenantId: "tenant-b", providerId: "anthropic", session: second.session }, redirectFor(sessionState(second.session), "code=other-code"));
+  await api.submitCallback({ tenantId: "tenant-b", providerId: "anthropic", session: second.session }, redirectFor(sessionState(fake), "code=other-code"));
   fake.files.pop();
   await expectProxyError(api.poll({ tenantId: "tenant-b", providerId: "anthropic", session: second.session }), "account_in_use");
 });
@@ -175,20 +182,22 @@ test("Given callback URLs with wrong prefix, state, or code, when submitting, th
   await expectProxyError(api.submitCallback(target, "http://evil.example/callback?code=x&state=y"), "callback_invalid");
   await expectProxyError(api.submitCallback(target, redirectFor("wrong-state"), ), "callback_invalid");
   await expectProxyError(api.submitCallback(target, "http://localhost:54545/callback?state=x"), "callback_invalid");
+  await api.cancel(target);
 });
 
 test("Given oauth status failures, when polling, then unknown maps to flow_expired and denial to callback_invalid", async () => {
   const fake = createFake();
   const api = connector(fake);
   const started = await api.start({ tenantId: "tenant-a", providerId: "anthropic" });
-  const state = sessionState(started.session);
+  const state = sessionState(fake);
   fake.sessions.delete(state);
   await expectProxyError(api.poll({ tenantId: "tenant-a", providerId: "anthropic", session: started.session }), "flow_expired");
   const retry = await api.start({ tenantId: "tenant-a", providerId: "anthropic" });
-  const retryState = sessionState(retry.session);
+  const retryState = sessionState(fake);
   await api.submitCallback({ tenantId: "tenant-a", providerId: "anthropic", session: retry.session }, redirectFor(retryState, "error=access_denied"));
   const error = await expectProxyError(api.poll({ tenantId: "tenant-a", providerId: "anthropic", session: retry.session }), "callback_invalid");
-  expect(error.message).toContain("access_denied");
+  expect(error.message).not.toContain("access_denied");
+  expect(String(error.cause)).toContain("access_denied");
 });
 
 test("Given a foreign binding, when disconnecting, then the file is kept and account_in_use is thrown", async () => {
