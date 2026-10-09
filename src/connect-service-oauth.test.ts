@@ -1,18 +1,23 @@
-import { generateKeyPairSync, sign } from "node:crypto";
 import { afterEach, expect, test } from "bun:test";
-import { CHATGPT_PLAN_SCOPE, createChatGptHostId } from "./chatgpt-plan.js";
-import { CHATGPT_ISSUER, resetChatGptSigningKeysForTests } from "./chatgpt-plan-id-token.js";
+import { chatGptPlanSecretRefs } from "./chatgpt-plan-credential.js";
+import { resetChatGptSigningKeysForTests } from "./chatgpt-plan-id-token.js";
 import { parsePendingFlow } from "./connect-flow-state.js";
-import { createConnectService, type ConnectService } from "./connect-service.js";
-import { type ConnectResponse, type ConnectStep } from "./connect-protocol.js";
-import { createMemoryPendingFlowStore, createMemoryTenantStore, type PendingFlowStore } from "./hosted-store.js";
+import { type ConnectService } from "./connect-service.js";
+import { type HostedTenantStore, type PendingFlowStore } from "./hosted-store.js";
+import {
+  callbackWith,
+  chatGptNonce,
+  errorOf,
+  fakeOpenAi,
+  ISSUED,
+  planTokenReply,
+  setupConnectService,
+  startChatGpt,
+  stepOf,
+} from "./connect-service-test-helpers.js";
+import { AuthKit } from "./kit.js";
 import { ProxyAccountError, type ProxyAccountBinding, type ProxyAccountConnector, type ProxyAccountProgress, type ProxyAccountRoute, type ProxyAccountSession, type ProxyAccountStart, type ProxyAccountTarget } from "./hosted-types.js";
-import type { AuthFetch, ModelDefinition, ProviderDefinition } from "./types.js";
-
-const ISSUED = "oaiapp_issued123";
-const PLAN_SCOPES = `openid profile email offline_access resource.invoke ${CHATGPT_PLAN_SCOPE}`;
-const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-const jwk = publicKey.export({ format: "jwk" });
+import type { ModelDefinition, ProviderDefinition } from "./types.js";
 
 afterEach(() => resetChatGptSigningKeysForTests());
 
@@ -31,27 +36,6 @@ const TEST_PROVIDERS: readonly ProviderDefinition[] = [
     models: [{ id: "claude-opus", name: "Claude Opus", tags: ["active", "tools"] }],
   },
 ];
-
-type TokenReply = { readonly status: number; readonly body: unknown };
-
-function idToken(nonce: string): string {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: "RS256", kid: "test-key" })).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ iss: CHATGPT_ISSUER, sub: "user-sub", aud: ISSUED, exp: nowSeconds + 3600, iat: nowSeconds, nonce, email: "dev@example.com" })).toString("base64url");
-  return `${header}.${payload}.${sign("RSA-SHA256", Buffer.from(`${header}.${payload}`), privateKey).toString("base64url")}`;
-}
-
-function fakeOpenAi(): { readonly fetch: AuthFetch; readonly urls: string[]; setReply: (reply: TokenReply) => void } {
-  const urls: string[] = [];
-  let reply: TokenReply = { status: 200, body: {} };
-  const fetchImpl: AuthFetch = async (input) => {
-    const url = String(input);
-    if (url.endsWith("/.well-known/jwks.json")) return Response.json({ keys: [{ ...jwk, kid: "test-key", alg: "RS256", use: "sig" }] });
-    urls.push(url);
-    return Response.json(reply.body, { status: reply.status });
-  };
-  return { fetch: fetchImpl, urls, setReply: (next) => { reply = next; } };
-}
 
 class FakeProxyAccounts implements ProxyAccountConnector {
   readonly providerIds: readonly string[] = ["anthropic"];
@@ -109,60 +93,17 @@ class FakeProxyAccounts implements ProxyAccountConnector {
   }
 }
 
-function setup(): { readonly service: ConnectService; readonly pendingFlows: PendingFlowStore; readonly openai: { readonly fetch: AuthFetch; readonly urls: string[]; setReply: (reply: TokenReply) => void }; readonly proxy: FakeProxyAccounts } {
-  const pendingFlows = createMemoryPendingFlowStore();
-  const openai = fakeOpenAi();
+function setup(): { readonly service: ConnectService; readonly pendingFlows: PendingFlowStore; readonly openai: ReturnType<typeof fakeOpenAi>; readonly proxy: FakeProxyAccounts; readonly tenantStore: HostedTenantStore } {
   const proxy = new FakeProxyAccounts();
-  const service = createConnectService({
-    tenantStore: createMemoryTenantStore(),
-    pendingFlows,
-    agentName: "Orbi",
-    hostId: createChatGptHostId(),
-    providers: TEST_PROVIDERS,
-    chatGptPlan: { enabled: true },
-    proxyAccounts: proxy,
-    fetch: openai.fetch,
-  });
-  return { service, pendingFlows, openai, proxy };
-}
-
-function stepOf(response: ConnectResponse): ConnectStep {
-  if (response.kind !== "step") throw new Error(`Expected a step, got ${response.kind}`);
-  return response.step;
-}
-
-function errorOf(response: ConnectResponse): string {
-  if (response.kind !== "error") throw new Error(`Expected an error, got ${response.kind}`);
-  return response.code;
-}
-
-async function chatGptNonce(pendingFlows: PendingFlowStore, flowId: string): Promise<string> {
-  const raw = await pendingFlows.peek(flowId, "guild-a");
-  const pending = raw === undefined ? undefined : parsePendingFlow(raw);
-  if (pending?.kind !== "chatgpt-plan") throw new Error("Expected a ChatGPT pending flow");
-  return pending.authorization.nonce;
-}
-
-async function startChatGpt(service: ConnectService): Promise<{ readonly flowId: string; readonly authorizationUrl: string; readonly callbackPrefix: string }> {
-  const started = stepOf(await service.handle("guild-a", { op: "start", providerId: "openai", method: "account" }));
-  if (started.kind !== "redirect-paste") throw new Error("Expected redirect-paste");
-  return { flowId: started.flowId, authorizationUrl: started.authorizationUrl, callbackPrefix: started.callbackPrefix };
-}
-
-function callbackWith(authorizationUrl: string, callbackPrefix: string, params: Record<string, string>): string {
-  const state = new URL(authorizationUrl).searchParams.get("state");
-  if (state === null) throw new Error("Authorization URL has no state");
-  const url = new URL(callbackPrefix);
-  url.searchParams.set("state", state);
-  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  return url.toString();
+  const base = setupConnectService({ providers: TEST_PROVIDERS, proxyAccounts: proxy });
+  return { ...base, proxy };
 }
 
 test("Given hosted ChatGPT plan, when the flow completes, then status, models, and runtime reflect the plan", async () => {
   const { service, pendingFlows, openai } = setup();
   const start = await startChatGpt(service);
   expect(start.callbackPrefix).toBe("http://127.0.0.1:1455/auth/callback");
-  openai.setReply({ status: 200, body: { access_token: "plan-at", refresh_token: "plan-rt", id_token: idToken(await chatGptNonce(pendingFlows, start.flowId)), expires_in: 3600, scope: PLAN_SCOPES } });
+  openai.setReply(planTokenReply(await chatGptNonce(pendingFlows, start.flowId)));
 
   const done = stepOf(await service.handle("guild-a", { op: "submit", flowId: start.flowId, input: { kind: "redirect-url", value: callbackWith(start.authorizationUrl, start.callbackPrefix, { code: "authcode", client_id: ISSUED }) } }));
   if (done.kind !== "connected") throw new Error("Expected connected");
@@ -183,7 +124,7 @@ test("Given hosted ChatGPT plan, when the flow completes, then status, models, a
 test("Given a plan connection, when auth is revoked, then runtime clears and status asks to reconnect", async () => {
   const { service, pendingFlows, openai } = setup();
   const start = await startChatGpt(service);
-  openai.setReply({ status: 200, body: { access_token: "plan-at", refresh_token: "plan-rt", id_token: idToken(await chatGptNonce(pendingFlows, start.flowId)), expires_in: 3600, scope: PLAN_SCOPES } });
+  openai.setReply(planTokenReply(await chatGptNonce(pendingFlows, start.flowId)));
   const done = stepOf(await service.handle("guild-a", { op: "submit", flowId: start.flowId, input: { kind: "redirect-url", value: callbackWith(start.authorizationUrl, start.callbackPrefix, { code: "authcode", client_id: ISSUED }) } }));
   if (done.kind !== "connected") throw new Error("Expected connected");
 
@@ -204,7 +145,7 @@ test("Given ChatGPT callbacks, when consent is declined or scope is missing, the
   expect(errorOf(await service.handle("guild-a", { op: "submit", flowId: denied.flowId, input: { kind: "redirect-url", value: callbackWith(denied.authorizationUrl, denied.callbackPrefix, { error: "access_denied" }) } }))).toBe("access_denied");
 
   const scoped = await startChatGpt(service);
-  openai.setReply({ status: 200, body: { access_token: "plan-at", refresh_token: "plan-rt", id_token: idToken(await chatGptNonce(pendingFlows, scoped.flowId)), expires_in: 3600, scope: "openid profile email" } });
+  openai.setReply(planTokenReply(await chatGptNonce(pendingFlows, scoped.flowId), "openid profile email"));
   expect(errorOf(await service.handle("guild-a", { op: "submit", flowId: scoped.flowId, input: { kind: "redirect-url", value: callbackWith(scoped.authorizationUrl, scoped.callbackPrefix, { code: "authcode", client_id: ISSUED }) } }))).toBe("plan_not_granted");
   service.dispose();
 });
@@ -212,7 +153,7 @@ test("Given ChatGPT callbacks, when consent is declined or scope is missing, the
 test("Given a plan connection, when disconnected, then the session is revoked and state is cleared", async () => {
   const { service, pendingFlows, openai } = setup();
   const start = await startChatGpt(service);
-  openai.setReply({ status: 200, body: { access_token: "plan-at", refresh_token: "plan-rt", id_token: idToken(await chatGptNonce(pendingFlows, start.flowId)), expires_in: 3600, scope: PLAN_SCOPES } });
+  openai.setReply(planTokenReply(await chatGptNonce(pendingFlows, start.flowId)));
   const done = stepOf(await service.handle("guild-a", { op: "submit", flowId: start.flowId, input: { kind: "redirect-url", value: callbackWith(start.authorizationUrl, start.callbackPrefix, { code: "authcode", client_id: ISSUED }) } }));
   if (done.kind !== "connected") throw new Error("Expected connected");
 
@@ -221,6 +162,29 @@ test("Given a plan connection, when disconnected, then the session is revoked an
   expect(disconnected.status.connections).toEqual([]);
   expect(openai.urls.some((url) => url.endsWith("/api/accounts/oauth/revoke"))).toBe(true);
   service.dispose();
+});
+
+test("Given a plan connection, when state is re-read, then secret reconcile keeps tenant tokens and status plus runtime still work", async () => {
+  const { service, pendingFlows, openai, tenantStore } = setup();
+  try {
+    const start = await startChatGpt(service);
+    openai.setReply(planTokenReply(await chatGptNonce(pendingFlows, start.flowId)));
+    const done = stepOf(await service.handle("guild-a", { op: "submit", flowId: start.flowId, input: { kind: "redirect-url", value: callbackWith(start.authorizationUrl, start.callbackPrefix, { code: "authcode", client_id: ISSUED }) } }));
+    if (done.kind !== "connected") throw new Error("Expected connected");
+
+    const kit = new AuthKit({ storage: tenantStore.storage("guild-a"), providers: TEST_PROVIDERS });
+    await kit.readState();
+    const refs = chatGptPlanSecretRefs("openai");
+    expect(await kit.secrets.get(refs.accessTokenRef)).toBe("plan-at");
+    expect(await kit.secrets.get(refs.refreshTokenRef)).toBe("plan-rt");
+
+    const status = await service.handle("guild-a", { op: "status" });
+    if (status.kind !== "status") throw new Error("Expected status");
+    expect(status.status.connections[0]).toMatchObject({ providerId: "openai", method: "account", health: "connected" });
+    expect(await service.runtime("guild-a")).toMatchObject({ providerId: "openai", wire: "openai-responses", planUsage: { kind: "chatgpt-plan" } });
+  } finally {
+    service.dispose();
+  }
 });
 
 test("Given a proxy account flow, when risk is declined, then the flow is cancelled", async () => {
