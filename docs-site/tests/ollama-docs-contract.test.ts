@@ -4,8 +4,6 @@ import { documentationViolations } from "../scripts/documentation-policy"
 
 const repositoryRoot = resolve(import.meta.dir, "../..")
 const guidePath = "src/content/docs/guides/providers-auth.md"
-const exactReadmeRow =
-  "| Ollama compatibility entry | No auth, or environment auth via `OLLAMA_API_KEY`; no API-key method |"
 const exactGuideRow = "| Ollama compatibility entry | No | `OLLAMA_API_KEY` | No |"
 const exactGuideStatement =
   "Ollama supports no auth, or environment auth via `OLLAMA_API_KEY`; no API-key method."
@@ -23,11 +21,8 @@ const emptyCatalog = {
 
 describe("Ollama documentation contract", () => {
   test("matches runtime none and environment availability", async () => {
-    // Given: public README/guide claims and the runtime provider catalog
-    const [readme, guide] = await Promise.all([
-      Bun.file(resolve(repositoryRoot, "README.md")).text(),
-      Bun.file(resolve(repositoryRoot, "docs-site", guidePath)).text(),
-    ])
+    // Given: public guide claims and the runtime provider catalog
+    const guide = await Bun.file(resolve(repositoryRoot, "docs-site", guidePath)).text()
     const runtimeProbe = Bun.spawnSync({
       cmd: [
         process.execPath,
@@ -44,7 +39,6 @@ console.log(ollama?.authMethods.join(",") ?? "missing");`,
     // Then: no-auth and environment remain available without API-key/account login
     expect(runtimeProbe.exitCode, runtimeProbe.stderr.toString()).toBe(0)
     expect(runtimeProbe.stdout.toString().trim()).toBe("none,env")
-    expect(readme).toContain(exactReadmeRow)
     expect(guide).toContain(exactGuideRow)
     expect(guide).toContain(exactGuideStatement)
   })

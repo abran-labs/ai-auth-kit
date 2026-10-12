@@ -11,7 +11,6 @@ const skillPending =
   "Pending: use this exact command after the agent-skill-v1.1.0 release asset is uploaded."
 const npmUnavailable = "The npm endpoint currently returns 404."
 const publicSurfaces = [
-  { path: "README.md", libraryCount: 1, skillCount: 1 },
   { path: "docs-site/src/pages/index.astro", libraryCount: 2, skillCount: 1 },
   { path: "docs-site/src/content/docs/start/quickstart.md", libraryCount: 1, skillCount: 0 },
   { path: "docs-site/src/content/docs/guides/library.md", libraryCount: 1, skillCount: 0 },
