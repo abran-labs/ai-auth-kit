@@ -173,9 +173,11 @@ test("Given tracked distribution files, when source is rebuilt in a temporary di
   expect(result.files).toBeGreaterThan(0);
 }, 20_000);
 
-test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins exact public npm version 1.1.0", async () => {
+test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it documents unpinned public npm installs", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
-  expect(readme).toContain("bun add @abran-labs/ai-auth-kit@1.1.0");
+  expect(readme).toContain("bun add @abran-labs/ai-auth-kit");
+  expect(readme).toContain("npm install @abran-labs/ai-auth-kit");
+  expect(readme).not.toContain("@abran-labs/ai-auth-kit@");
   expect(readme).not.toContain("github:abran-labs/ai-auth-kit#");
   expect(readme).not.toMatch(/@abran-labs\/ai-auth-kit@(?:latest|\^|~|>=)/);
 });
