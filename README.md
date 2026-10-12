@@ -23,7 +23,3 @@ npm install @abran-labs/ai-auth-kit
 ```sh
 curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh
 ```
-
-## Docs
-
-[Documentation](docs-site/src/content/docs/start/index.md)
