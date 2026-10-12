@@ -1,4 +1,4 @@
-# Host-owned integration patterns — 1.0.0
+# Host-owned integration patterns — 1.1.0
 
 AI Auth Kit owns auth/model mechanics. Host owns command names, arguments, output, prompts,
 cancellation, telemetry, and provider API calls.

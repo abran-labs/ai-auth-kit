@@ -1,17 +1,17 @@
-# AI Auth Kit 1.0.0 npm release checklist
+# AI Auth Kit 1.1.0 npm release checklist
 
 This checklist stages npm-facing documentation and workflow policy only. Do not publish npm, create
 or replace a GitHub release, push a tag, or deploy the docs site without separate approval.
 
 ## Version synchronization
 
-- [ ] `package.json` is exact library version `1.0.0` under the separately reviewed package task.
+- [ ] `package.json` is exact library version `1.1.0` under the separately reviewed package task.
 - [ ] `README.md` and every maintained `docs-site` route install only
-  `@abran-labs/ai-auth-kit@1.0.0`.
-- [ ] `skills/ai-auth-kit/VERSION` is `1.0.0`.
-- [ ] `skills/ai-auth-kit/SKILL.md` declares skill/library `1.0.0` and requires first-use checking.
-- [ ] `skills/ai-auth-kit/scripts/check-library-version.mjs` expects `1.0.0` and reports exact
-  `bun add @abran-labs/ai-auth-kit@1.0.0` remediation without updating.
+  `@abran-labs/ai-auth-kit@1.1.0`.
+- [ ] `skills/ai-auth-kit/VERSION` is `1.1.0`.
+- [ ] `skills/ai-auth-kit/SKILL.md` declares skill/library `1.1.0` and requires first-use checking.
+- [ ] `skills/ai-auth-kit/scripts/check-library-version.mjs` expects `1.1.0` and reports exact
+  `bun add @abran-labs/ai-auth-kit@1.1.0` remediation without updating.
 
 ## One-tarball npm workflow
 
@@ -38,7 +38,7 @@ or replace a GitHub release, push a tag, or deploy the docs site without separat
 
 ## Irreversible gates
 
-- [ ] Do not publish `@abran-labs/ai-auth-kit@1.0.0` until explicit final npm approval is freshly entered
+- [ ] Do not publish `@abran-labs/ai-auth-kit@1.1.0` until explicit final npm approval is freshly entered
   as `I_HAVE_EXPLICIT_FINAL_NPM_APPROVAL` and `npm-production` protection approves the run.
 - [ ] Do not create/upload GitHub release assets or tag during this staging task.
 - [ ] Do not deploy the docs site during this staging task.

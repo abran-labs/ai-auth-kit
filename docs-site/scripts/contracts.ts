@@ -29,6 +29,8 @@ const requiredSourcePaths = [
   "src/content/docs/guides/storage-privacy.md",
   "src/content/docs/guides/models-dev.md",
   "src/content/docs/guides/cliproxy.md",
+  "src/content/docs/guides/hosted.md",
+  "src/content/docs/guides/web-connect.md",
   "src/content/docs/guides/agent-skill.md",
   "src/content/docs/reference/api.md",
   "src/content/docs/reference/security.md",
@@ -155,7 +157,7 @@ export async function validateSource(root: string): Promise<readonly string[]> {
     "actions/upload-pages-artifact",
     "actions/deploy-pages",
     "BASE: /ai-auth-kit/",
-    "branches: [master]",
+    "workflow_dispatch:",
     "bun run qa:browser && bun run validate:dist",
   ] as const) {
     requireText(violations, workflow, workflowPath, marker)
@@ -189,6 +191,8 @@ export async function validateDist(
     "guides/storage-privacy/index.html",
     "guides/models-dev/index.html",
     "guides/cliproxy/index.html",
+    "guides/hosted/index.html",
+    "guides/web-connect/index.html",
     "guides/agent-skill/index.html",
     "reference/api/index.html",
     "reference/security/index.html",

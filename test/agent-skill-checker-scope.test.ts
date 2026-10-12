@@ -25,7 +25,7 @@ test("Given only an ambient parent installation, when a child project checks its
         join(packageRoot, "package.json"),
         `${JSON.stringify({
           name: "@abran-labs/ai-auth-kit",
-          version: "1.0.0",
+          version: "1.1.0",
           type: "module",
           exports: {
             ".": {
@@ -51,8 +51,8 @@ test("Given only an ambient parent installation, when a child project checks its
     expect(exitCode).not.toBe(0);
     expect(stderr).toContain("path=not-found");
     expect(stderr).toContain("detected=not-installed");
-    expect(stderr).toContain("expected=1.0.0");
-    expect(stderr).toContain("upgrade=bun add @abran-labs/ai-auth-kit@1.0.0");
+    expect(stderr).toContain("expected=1.1.0");
+    expect(stderr).toContain("upgrade=bun add @abran-labs/ai-auth-kit@1.1.0");
   } finally {
     await rm(ambientRoot, { recursive: true });
   }

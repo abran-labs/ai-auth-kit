@@ -19,6 +19,8 @@ export const maintainedDocumentationRoutes = [
   { commandBlock: false, name: "storage-privacy", path: "guides/storage-privacy/" },
   { commandBlock: false, name: "models-dev", path: "guides/models-dev/" },
   { commandBlock: false, name: "cliproxy", path: "guides/cliproxy/" },
+  { commandBlock: false, name: "hosted", path: "guides/hosted/" },
+  { commandBlock: false, name: "web-connect", path: "guides/web-connect/" },
   { commandBlock: true, name: "agent-skill", path: "guides/agent-skill/" },
   { commandBlock: false, name: "api", path: "reference/api/" },
   { commandBlock: false, name: "security", path: "reference/security/" },
@@ -66,6 +68,14 @@ export function documentationViolations(source: string, sourcePath: string): rea
   }
   for (const match of source.matchAll(markdownLink)) {
     const target = (match[1] ?? "").split("#")[0] ?? ""
+    if (
+      target.startsWith("/") &&
+      !target.startsWith("//") &&
+      sourcePath.startsWith(documentationSourcePrefix)
+    ) {
+      violations.add(`${sourcePath}: root-absolute link escapes base ${target}`)
+      continue
+    }
     const route = isInternalLink(target) ? renderedRoute(target, sourcePath) : undefined
     if (route !== undefined && !maintainedRoutePaths.has(route)) {
       violations.add(`${sourcePath}: broken rendered route ${route}`)

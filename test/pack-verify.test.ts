@@ -51,7 +51,7 @@ async function frozenLocalInstallAcceptsTamperedTarball(tarball: string): Promis
 
 test("Given malformed release metadata, when the pack contract is validated, then executable and lifecycle surfaces fail closed", async () => {
   expect(() => validateManifest({
-    version: "1.0.0",
+    version: "1.1.0",
     bin: { kit: "./dist/cli.js" },
     exports: { ".": { bun: "./src/index.ts", import: "./dist/index.js", types: "./dist/index.d.ts" } },
     files: [],

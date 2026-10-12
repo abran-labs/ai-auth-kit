@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -44,7 +45,7 @@ export function createCatalogRefresher(options: CatalogRefresherOptions): { read
         const response = await fetchModelsDevCatalog({ fetch, url: MODELS_DEV_URL, etag: existing?.etag ?? null });
         if (response.kind === "not-modified" && existing !== null) return { source: "cache", catalog: existing.catalog };
         if (response.kind === "not-modified") return fallback();
-        const contentSha = new Bun.CryptoHasher("sha256").update(response.body).digest("hex");
+        const contentSha = createHash("sha256").update(response.body).digest("hex");
         const catalog = normalizeModelsDevCatalog(JSON.parse(response.body), { sourceUrl: MODELS_DEV_URL, sourceSchemaCommit: options.sourceSchemaCommit, capturedAt: new Date(now()).toISOString(), etag: response.etag, sourceContentSha256: contentSha });
         await saveCatalogCache(root, { catalog, etag: response.etag, fetchedAt: new Date(now()).toISOString() });
         return { source: "network", catalog };

@@ -57,6 +57,22 @@ describe("contract validator", () => {
     ])
   })
 
+  test("rejects root-absolute documentation links that escape the deployed base path", () => {
+    // Given: a guide linking with a root-absolute path
+    const rootAbsoluteLink = "Follow the [library guide](/guides/library/) first."
+
+    // When: documentation policy checks the guide
+    const violations = documentationViolations(
+      rootAbsoluteLink,
+      "src/content/docs/guides/web-connect.md",
+    )
+
+    // Then: the link is rejected because it ignores the Pages base path
+    expect(violations).toEqual([
+      "src/content/docs/guides/web-connect.md: root-absolute link escapes base /guides/library/",
+    ])
+  })
+
   test("reports generic installer and binary-release claims", () => {
     expect(
       documentationViolations(
@@ -76,7 +92,7 @@ describe("contract validator", () => {
   })
 
   test("enumerates every maintained route for browser capture", () => {
-    expect(maintainedDocumentationRoutes).toHaveLength(11)
+    expect(maintainedDocumentationRoutes).toHaveLength(13)
   })
 
   test("keeps docs activation concise with exact commands and canonical adapter provenance", async () => {
@@ -95,9 +111,9 @@ describe("contract validator", () => {
 
     // Then: concise labels and exact activation/provenance contracts remain
     expect(scopedSource).not.toMatch(/60-second quickstart|Start in 60 seconds/i)
-    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.0.0")
+    expect(quickstart).toContain("bun add @abran-labs/ai-auth-kit@1.1.0")
     expect(agentGuide).toContain(
-      "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh",
+      "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh",
     )
     expect(cliProxy).toContain("[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)")
     expect(providers).toContain("only for Anthropic or Google account auth")
@@ -140,6 +156,8 @@ describe("contract validator", () => {
       "guides/storage-privacy",
       "guides/models-dev",
       "guides/cliproxy",
+      "guides/hosted",
+      "guides/web-connect",
       "guides/agent-skill",
       "reference/api",
       "reference/security",
@@ -163,6 +181,8 @@ describe("contract validator", () => {
         writeFile(resolve(distRoot, "guides/storage-privacy/index.html"), "storage"),
         writeFile(resolve(distRoot, "guides/models-dev/index.html"), "catalog"),
         writeFile(resolve(distRoot, "guides/cliproxy/index.html"), "adapter"),
+        writeFile(resolve(distRoot, "guides/hosted/index.html"), "hosted"),
+        writeFile(resolve(distRoot, "guides/web-connect/index.html"), "web connect"),
         writeFile(resolve(distRoot, "guides/agent-skill/index.html"), "agent skill"),
         writeFile(resolve(distRoot, "reference/api/index.html"), "api"),
         writeFile(resolve(distRoot, "reference/security/index.html"), "security"),

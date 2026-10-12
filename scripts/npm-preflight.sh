@@ -89,7 +89,7 @@ elif is_exact_npm_e404 "$tags"; then
 else
   fail "tag lookup failed"
 fi
-if node -e 'const versions = JSON.parse(process.argv[1]); if (!Array.isArray(versions) || !versions.every((version) => typeof version === "string")) process.exit(1); if (versions.includes(process.argv[2])) process.exit(2)' "$versions" "${RELEASE_VERSION:-1.0.0}"; then
+if node -e 'const versions = JSON.parse(process.argv[1]); if (!Array.isArray(versions) || !versions.every((version) => typeof version === "string")) process.exit(1); if (versions.includes(process.argv[2])) process.exit(2)' "$versions" "${RELEASE_VERSION:-1.1.0}"; then
   :
 else
   case "$?" in
@@ -97,7 +97,7 @@ else
     *) fail "versions lookup is invalid" ;;
   esac
 fi
-if node -e 'const tags = JSON.parse(process.argv[1]); if (tags === null || Array.isArray(tags) || typeof tags !== "object" || !Object.values(tags).every((tag) => typeof tag === "string")) process.exit(1); if (Object.values(tags).includes(process.argv[2])) process.exit(2)' "$tags" "${RELEASE_VERSION:-1.0.0}"; then
+if node -e 'const tags = JSON.parse(process.argv[1]); if (tags === null || Array.isArray(tags) || typeof tags !== "object" || !Object.values(tags).every((tag) => typeof tag === "string")) process.exit(1); if (Object.values(tags).includes(process.argv[2])) process.exit(2)' "$tags" "${RELEASE_VERSION:-1.1.0}"; then
   :
 else
   case "$?" in

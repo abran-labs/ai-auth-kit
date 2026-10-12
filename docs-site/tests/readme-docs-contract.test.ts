@@ -9,15 +9,15 @@ import {
 } from "../scripts/readme-contract"
 
 const repositoryRoot = resolve(import.meta.dir, "../..")
-const exactLibraryInstall = "bun add @abran-labs/ai-auth-kit@1.0.0"
+const exactLibraryInstall = "bun add @abran-labs/ai-auth-kit@1.1.0"
 const exactSkillInstall =
-  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh"
+  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh"
 const cliProxyApiLink = "[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)"
 const factualOllamaRow =
   "| Ollama compatibility entry | No auth, or environment auth via `OLLAMA_API_KEY`; no API-key method |"
 const legacyOllamaRow = "| Ollama compatibility entry | No auth or `OLLAMA_API_KEY` |"
 const providerRows = [
-  "| OpenAI | API key, `OPENAI_API_KEY`, or built-in account OAuth |",
+  "| OpenAI | API key, `OPENAI_API_KEY`, or Sign in with ChatGPT (ChatGPT plan) |",
   "| GitHub Copilot | `GITHUB_TOKEN`, `GH_TOKEN`, or `COPILOT_GITHUB_TOKEN`, plus built-in account OAuth |",
   "| Anthropic | API key, `ANTHROPIC_API_KEY`, or optional CLIProxyAPI account auth |",
   "| Google | API key, supported Gemini/Google environment variables, or optional CLIProxyAPI account auth |",

@@ -3,8 +3,8 @@ import { readFile, realpath } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const packageName = "@abran-labs/ai-auth-kit";
-const expectedVersion = "1.0.0";
-const upgradeCommand = "bun add @abran-labs/ai-auth-kit@1.0.0";
+const expectedVersion = "1.1.0";
+const upgradeCommand = "bun add @abran-labs/ai-auth-kit@1.1.0";
 const noActionRequired = "no-action-required";
 
 function reportFailure(path, detected, upgrade = upgradeCommand) {

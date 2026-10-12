@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-version='1.0.0'
+version='1.1.0'
 release="agent-skill-v$version"
 archive="ai-auth-kit-skill-$version.tar.gz"
 base_url=${AI_AUTH_KIT_SKILL_RELEASE_BASE_URL:-"https://github.com/abran-labs/ai-auth-kit/releases/download/$release"}

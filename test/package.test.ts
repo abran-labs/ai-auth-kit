@@ -7,26 +7,30 @@ import { verifyDist } from "../scripts/verify-dist.js";
 const root = process.cwd();
 const packageManifestSchema = z.object({
   bin: z.never().optional(),
-  exports: z.object({ ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict() }).strict(),
+  exports: z.object({
+    ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict(),
+    "./react": z.object({ bun: z.literal("./src/react/index.ts"), import: z.literal("./dist/react/index.js"), types: z.literal("./dist/react/index.d.ts") }).strict(),
+  }).strict(),
   files: z.array(z.string()),
   publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
   repository: z.object({ type: z.string(), url: z.string() }),
   scripts: z.record(z.string(), z.string()),
-  version: z.literal("1.0.0"),
+  version: z.literal("1.1.0"),
 });
 
-test("Given the canonical manifest, when package entry points are inspected, then consumers receive a public 1.0.0 root-only library without an executable bin", async () => {
+test("Given the canonical manifest, when package entry points are inspected, then consumers receive a public 1.1.0 root-only library without an executable bin", async () => {
   const manifest = packageManifestSchema.parse(JSON.parse(await readFile(join(root, "package.json"), "utf8")));
 
   expect(manifest.exports["."].bun).toBe("./src/index.ts");
   expect(manifest.exports["."].import).toBe("./dist/index.js");
   expect(manifest.exports["."].types).toBe("./dist/index.d.ts");
   expect(manifest.publishConfig).toEqual({ access: "public", registry: "https://registry.npmjs.org/" });
-  expect(manifest.version).toBe("1.0.0");
+  expect(manifest.version).toBe("1.1.0");
   expect(manifest.bin).toBeUndefined();
   expect(manifest.files).toEqual([
     "dist",
     "src/account-oauth-browser.ts",
+    "src/account-oauth-chatgpt.ts",
     "src/account-oauth-github.ts",
     "src/account-oauth-openai.ts",
     "src/account-oauth-shared.ts",
@@ -42,17 +46,48 @@ test("Given the canonical manifest, when package entry points are inspected, the
     "src/catalog-snapshot.ts",
     "src/catalog-source-schema.ts",
     "src/catalog.ts",
+    "src/chatgpt-plan-credential.ts",
+    "src/chatgpt-plan-id-token.ts",
+    "src/chatgpt-plan-loopback.ts",
+    "src/chatgpt-plan-models.ts",
+    "src/chatgpt-plan-refresh.ts",
+    "src/chatgpt-plan-scope.ts",
+    "src/chatgpt-plan.ts",
     "src/cliproxyapi-archive.ts",
     "src/cliproxyapi-cache.ts",
+    "src/cliproxyapi-config.ts",
+    "src/cliproxyapi-connector.ts",
     "src/cliproxyapi-http.ts",
+    "src/cliproxyapi-management.ts",
     "src/cliproxyapi-release.ts",
     "src/cliproxyapi.ts",
+    "src/connect-flow-state.ts",
+    "src/connect-flows.ts",
+    "src/connect-ops.ts",
+    "src/connect-protocol.ts",
+    "src/connect-runtime.ts",
+    "src/connect-service.ts",
     "src/credential-removal.ts",
     "src/external-auth.ts",
+    "src/hosted-store.ts",
+    "src/hosted-types.ts",
     "src/index.ts",
     "src/kit-runtime-auth.ts",
     "src/kit.ts",
+    "src/picker-auth-methods.ts",
     "src/picker.ts",
+    "src/react/ConnectPanel.tsx",
+    "src/react/connect-flow.tsx",
+    "src/react/connect-state.ts",
+    "src/react/entity-views.tsx",
+    "src/react/featured-providers.tsx",
+    "src/react/index.ts",
+    "src/react/provider-catalog.tsx",
+    "src/react/step-views.tsx",
+    "src/react/styles.ts",
+    "src/react/transport.ts",
+    "src/react/use-connect.ts",
+    "src/react/use-step-polling.ts",
     "src/safe-dir.ts",
     "src/schema.ts",
     "src/storage.ts",
@@ -70,6 +105,9 @@ test("Given the canonical manifest, when package entry points are inspected, the
   await access(join(root, "dist", "index.js"));
   await access(join(root, "dist", "index.d.ts"));
   await access(join(root, "dist", "index.js.map"));
+  await access(join(root, "dist", "react", "index.js"));
+  await access(join(root, "dist", "react", "index.d.ts"));
+  await access(join(root, "dist", "react", "index.js.map"));
   const ignored = Bun.spawn({ cmd: ["git", "check-ignore", "dist/index.js"], cwd: root, stdout: "pipe", stderr: "pipe" });
   expect(await ignored.exited, `${await new Response(ignored.stdout).text()}${await new Response(ignored.stderr).text()}`).toBe(1);
 });
@@ -123,7 +161,10 @@ test("Given the expanded package payload, when Bun dry-runs packing, then root l
   expect(exitCode, stderr).toBe(0);
   expect(payloadPaths).toContain("dist/index.js");
   expect(payloadPaths).toContain("dist/index.d.ts");
+  expect(payloadPaths).toContain("dist/react/index.js");
+  expect(payloadPaths).toContain("dist/react/index.d.ts");
   expect(payloadPaths).toContain("src/index.ts");
+  expect(payloadPaths).toContain("src/react/index.ts");
   expect(payloadPaths.some((path) => /(?:^|\/)(?:cli|version)(?:\.|\/|$)|(?:^|\/)install\.sh|(?:^|\/)installer-manager(?:\/|$)|(?:^|\/)release(?:\/|$)|(?:^|\/)\.npmrc$|(?:^|\/)(?:\.env|credentials)(?:\.|$)|\.(?:exe|dll|dylib|so|node)$/.test(path))).toBeFalse();
 });
 
@@ -132,9 +173,9 @@ test("Given tracked distribution files, when source is rebuilt in a temporary di
   expect(result.files).toBeGreaterThan(0);
 }, 20_000);
 
-test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins exact public npm version 1.0.0", async () => {
+test("Given immutable-consumer documentation, when its dependency grammar is inspected, then it pins exact public npm version 1.1.0", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
-  expect(readme).toContain("bun add @abran-labs/ai-auth-kit@1.0.0");
+  expect(readme).toContain("bun add @abran-labs/ai-auth-kit@1.1.0");
   expect(readme).not.toContain("github:abran-labs/ai-auth-kit#");
   expect(readme).not.toMatch(/@abran-labs\/ai-auth-kit@(?:latest|\^|~|>=)/);
 });

@@ -1,6 +1,6 @@
 import type { AuthKitState, AuthKitStore, SecretStore, StoredCredential } from "./types.js";
 
-type RemovalDependencies = { readonly secrets: SecretStore; readonly state: AuthKitState; readonly store: AuthKitStore; };
+type RemovalDependencies = { readonly secrets: SecretStore; readonly state: AuthKitState; readonly store: AuthKitStore; readonly onStateCommitted?: () => void; };
 
 export class CredentialRemovalError extends Error {
   readonly name = "CredentialRemovalError";
@@ -9,13 +9,20 @@ export class CredentialRemovalError extends Error {
 
 function refsFor(credential: StoredCredential): readonly string[] {
   if (credential.type === "api-key") return [credential.secretRef];
-  if (credential.type === "oauth-external") return [credential.metadata.accessTokenRef, credential.metadata.refreshTokenRef]
+  if (credential.type === "oauth-external") return [credential.metadata.accessTokenRef, credential.metadata.refreshTokenRef, credential.metadata.idTokenRef]
     .filter((ref): ref is string => typeof ref === "string" && ref.length > 0);
   return [];
 }
 
+export const HOST_SECRET_REF_PREFIX = "host:";
+export const CHATGPT_HOST_ID_REF = `${HOST_SECRET_REF_PREFIX}chatgpt:ext-agent-host-id`;
+
+export function isHostSecretRef(ref: string): boolean {
+  return ref.startsWith(HOST_SECRET_REF_PREFIX);
+}
+
 export function liveSecretRefs(state: AuthKitState): readonly string[] {
-  return [...new Set(Object.values(state.credentials).flatMap(refsFor))];
+  return [...new Set([...Object.values(state.credentials).flatMap(refsFor), CHATGPT_HOST_ID_REF])];
 }
 
 function removedState(state: AuthKitState, providerId: string): AuthKitState {
@@ -27,7 +34,7 @@ function removedState(state: AuthKitState, providerId: string): AuthKitState {
 export async function removeCredentialTransaction(dependencies: RemovalDependencies, providerId: string): Promise<void> {
   const next = removedState(dependencies.state, providerId);
   await dependencies.store.write(next);
-  if (process.env.AI_AUTH_KIT_INTERRUPT_AT === "state-commit-sigkill") process.kill(process.pid, "SIGKILL");
+  await dependencies.onStateCommitted?.();
   try {
     await dependencies.secrets.reconcile(liveSecretRefs(next));
   } catch (error) {

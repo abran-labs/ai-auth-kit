@@ -9,7 +9,7 @@ test("Given the canonical manifest, when Bun tooling is inspected, then all stan
 	const bunConfig = await readFile(join(root, "bunfig.toml"), "utf8");
 
 	expect(packageManifest).toContain('"packageManager": "bun@1.3.14"');
-	expect(packageManifest).toContain('"version": "1.0.0"');
+	expect(packageManifest).toContain('"version": "1.1.0"');
 	expect(packageManifest).toContain('"publishConfig": {');
 	expect(packageManifest).toContain('"access": "public"');
 	expect(packageManifest).toContain('"registry": "https://registry.npmjs.org/"');
@@ -22,7 +22,11 @@ test("Given the canonical manifest, when Bun tooling is inspected, then all stan
 	expect(packageManifest).toContain('"qa:stale-package": "bun run scripts/qa-stale-package.ts"');
 	expect(packageManifest).toContain('"repository": {');
 	expect(packageManifest).toContain('"url": "https://github.com/abran-labs/ai-auth-kit.git"');
-	expect(packageManifest).not.toContain('"peerDependenciesMeta"');
+	expect(packageManifest).toContain('"./react"');
+	expect(packageManifest).toContain('"peerDependencies"');
+	expect(packageManifest).toContain('"react": "19.3.0"');
+	expect(packageManifest).toContain('"peerDependenciesMeta"');
+	expect(packageManifest).toContain('"optional": true');
 	expect(packageManifest).not.toContain('"@oh-my-pi/pi-ai"');
 	expect(packageManifest).not.toContain('"vitest"');
 	expect(packageManifest).not.toContain('"tsx"');

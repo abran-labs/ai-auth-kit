@@ -1,5 +1,6 @@
 import { DEFAULT_PROVIDERS } from "./catalog.js";
 import { CatalogRuntime, type CatalogRefreshOptions, type CatalogStatus } from "./catalog-runtime.js";
+import { isSameChatGptGeneration } from "./chatgpt-plan-refresh.js";
 import { resolveRuntimeAuth } from "./kit-runtime-auth.js";
 import { liveSecretRefs, removeCredentialTransaction } from "./credential-removal.js";
 import { projectStorage } from "./storage.js";
@@ -41,6 +42,7 @@ export class AuthKit {
   private currentProviders: readonly ProviderDefinition[];
   private providerIndex: Map<string, ProviderDefinition>;
   private readonly catalog: CatalogRuntime | undefined;
+  private lockTail: Promise<void> = Promise.resolve();
 
   constructor(options: AuthKitOptions) {
     this.catalog = options.providers === undefined ? new CatalogRuntime(options.catalog) : undefined;
@@ -104,9 +106,23 @@ export class AuthKit {
   }
 
   async readState(): Promise<AuthKitState> {
-    const state = await this.store.read();
-    await this.secrets.reconcile(liveSecretRefs(state));
-    return state;
+    return this.runExclusive(async () => {
+      const state = await this.store.read();
+      await this.secrets.reconcile(liveSecretRefs(state));
+      return state;
+    });
+  }
+
+  async runExclusive<T>(action: () => Promise<T>): Promise<T> {
+    const previous = this.lockTail;
+    let release: () => void = () => undefined;
+    this.lockTail = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    try {
+      return await action();
+    } finally {
+      release();
+    }
   }
 
   async saveApiKey(providerId: string, apiKey: string): Promise<StoredCredential> {
@@ -114,15 +130,17 @@ export class AuthKit {
     if (!provider.authMethods.includes("api-key")) throw new Error(`${provider.id} does not support API key auth`);
     if (!apiKey.trim()) throw new Error("API key is required");
 
-    const ref = secretRef(provider.id);
-    await this.secrets.set(ref, apiKey.trim());
-    const credential: StoredCredential = { type: "api-key", secretRef: ref, createdAt: now() };
-    await this.patchState((state) => ({
-      ...state,
-      credentials: { ...state.credentials, [provider.id]: credential },
-      updatedAt: now()
-    }));
-    return credential;
+    return this.runExclusive(async () => {
+      const ref = secretRef(provider.id);
+      await this.secrets.set(ref, apiKey.trim());
+      const credential: StoredCredential = { type: "api-key", secretRef: ref, createdAt: now() };
+      await this.patchState((state) => ({
+        ...state,
+        credentials: { ...state.credentials, [provider.id]: credential },
+        updatedAt: now()
+      }));
+      return credential;
+    });
   }
 
   async saveEnvCredential(providerId: string, envVar?: string): Promise<EnvCredential> {
@@ -131,45 +149,57 @@ export class AuthKit {
     const selectedEnvVar = envVar ?? provider.envVars[0];
     if (!selectedEnvVar) throw new Error(`${provider.id} has no known env vars`);
 
-    const credential: EnvCredential = { type: "env", envVar: selectedEnvVar, createdAt: now() };
-    await this.patchState((state) => ({
-      ...state,
-      credentials: { ...state.credentials, [provider.id]: credential },
-      updatedAt: now()
-    }));
-    return credential;
+    return this.runExclusive(async () => {
+      const credential: EnvCredential = { type: "env", envVar: selectedEnvVar, createdAt: now() };
+      await this.patchState((state) => ({
+        ...state,
+        credentials: { ...state.credentials, [provider.id]: credential },
+        updatedAt: now()
+      }));
+      return credential;
+    });
   }
 
-  async saveExternalOAuth(providerId: string, metadata: Readonly<Record<string, string>> = {}): Promise<ExternalOAuthCredential> {
+  async saveExternalOAuth(providerId: string, metadata: Readonly<Record<string, string>> = {}, secretsToSet: ReadonlyArray<readonly [string, string]> = []): Promise<ExternalOAuthCredential> {
     const provider = this.getProvider(providerId);
     if (!provider.authMethods.includes("oauth-external")) {
       throw new Error(`${provider.id} does not support external OAuth auth`);
     }
-    const credential: ExternalOAuthCredential = { type: "oauth-external", metadata, createdAt: now() };
-    await this.patchState((state) => ({
-      ...state,
-      credentials: { ...state.credentials, [provider.id]: credential },
-      updatedAt: now()
-    }));
-    return credential;
+    return this.runExclusive(async () => {
+      for (const [ref, value] of secretsToSet) {
+        await this.secrets.set(ref, value);
+      }
+      const credential: ExternalOAuthCredential = { type: "oauth-external", metadata, createdAt: now() };
+      await this.patchState((state) => ({
+        ...state,
+        credentials: { ...state.credentials, [provider.id]: credential },
+        updatedAt: now()
+      }));
+      return credential;
+    });
   }
 
   async saveNoAuth(providerId: string): Promise<NoAuthCredential> {
     const provider = this.getProvider(providerId);
     if (!provider.authMethods.includes("none")) throw new Error(`${provider.id} does not support no-auth mode`);
-    const credential: NoAuthCredential = { type: "none", createdAt: now() };
-    await this.patchState((state) => ({
-      ...state,
-      credentials: { ...state.credentials, [provider.id]: credential },
-      updatedAt: now()
-    }));
-    return credential;
+    return this.runExclusive(async () => {
+      const credential: NoAuthCredential = { type: "none", createdAt: now() };
+      await this.patchState((state) => ({
+        ...state,
+        credentials: { ...state.credentials, [provider.id]: credential },
+        updatedAt: now()
+      }));
+      return credential;
+    });
   }
 
   async removeCredential(providerId: string): Promise<void> {
     const provider = this.getProvider(providerId);
-    const state = await this.readState();
-    await removeCredentialTransaction({ store: this.store, secrets: this.secrets, state }, provider.id);
+    return this.runExclusive(async () => {
+      const state = await this.store.read();
+      await this.secrets.reconcile(liveSecretRefs(state));
+      await removeCredentialTransaction({ store: this.store, secrets: this.secrets, state }, provider.id);
+    });
   }
 
   async getCredential(providerId: string): Promise<StoredCredential | undefined> {
@@ -181,14 +211,16 @@ export class AuthKit {
   async selectModel(providerId: string, modelId: string): Promise<SelectedModel> {
     const provider = this.getProvider(providerId);
     const model = this.getModel(provider.id, modelId);
-    const selectedModel: SelectedModel = {
-      providerId: provider.id,
-      modelId: model.id,
-      updatedAt: now(),
-      snapshot: { provider, model },
-    };
-    await this.patchState((state) => ({ ...state, selectedModel, updatedAt: now() }));
-    return selectedModel;
+    return this.runExclusive(async () => {
+      const selectedModel: SelectedModel = {
+        providerId: provider.id,
+        modelId: model.id,
+        updatedAt: now(),
+        snapshot: { provider, model },
+      };
+      await this.patchState((state) => ({ ...state, selectedModel, updatedAt: now() }));
+      return selectedModel;
+    });
   }
 
   async getSelectedModel(): Promise<SelectedModel | undefined> {
@@ -209,7 +241,26 @@ export class AuthKit {
   async runtimeAuth(providerId: string): Promise<RuntimeAuth> {
     const provider = this.getProvider(providerId);
     const credential = await this.getCredential(provider.id);
-    return resolveRuntimeAuth({ provider, credential, secrets: this.secrets, updateCredential: async (next) => this.patchState((state) => ({ ...state, credentials: { ...state.credentials, [provider.id]: next }, updatedAt: now() })) });
+    return resolveRuntimeAuth({
+      provider,
+      credential,
+      secrets: this.secrets,
+      updateCredential: async (next, tokens) => this.runExclusive(async () => {
+        const state = await this.store.read();
+        const current = state.credentials[provider.id];
+        if (current?.type !== "oauth-external" || !isSameChatGptGeneration(current, next)) return;
+        if (tokens !== undefined) {
+          await this.secrets.set(tokens.accessTokenRef, tokens.accessToken);
+          await this.secrets.set(tokens.refreshTokenRef, tokens.refreshToken);
+        }
+        await this.store.write({ ...state, credentials: { ...state.credentials, [provider.id]: next }, updatedAt: now() });
+      }),
+      readCurrent: async () => {
+        const state = await this.store.read();
+        const current = state.credentials[provider.id];
+        return current?.type === "oauth-external" ? current : undefined;
+      },
+    });
   }
 
   private async patchState(mutator: (state: AuthKitState) => AuthKitState): Promise<void> {

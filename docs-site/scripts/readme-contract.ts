@@ -1,12 +1,12 @@
 import { OLLAMA_README_ROW } from "./provider-doc-contract"
 
-export const EXACT_LIBRARY_INSTALL = "bun add @abran-labs/ai-auth-kit@1.0.0"
+export const EXACT_LIBRARY_INSTALL = "bun add @abran-labs/ai-auth-kit@1.1.0"
 export const EXACT_SKILL_INSTALL =
-  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.0.0/install-agent-skill.sh | sh"
+  "curl -fsSL https://github.com/abran-labs/ai-auth-kit/releases/download/agent-skill-v1.1.0/install-agent-skill.sh | sh"
 export const LIBRARY_PREPUBLICATION_LABEL =
-  "Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.0.0 is published."
+  "Pending: use this exact command after npm package @abran-labs/ai-auth-kit@1.1.0 is published."
 export const SKILL_PREPUBLICATION_LABEL =
-  "Pending: use this exact command after the agent-skill-v1.0.0 release asset is uploaded."
+  "Pending: use this exact command after the agent-skill-v1.1.0 release asset is uploaded."
 export const CLIPROXYAPI_REPOSITORY = "router-for-me/CLIProxyAPI"
 export const CLIPROXYAPI_REPOSITORY_URL = `https://github.com/${CLIPROXYAPI_REPOSITORY}` as const
 export const EXACT_README_PROMISE = "AI authentication, made easy."
@@ -22,7 +22,7 @@ type ReadmeProviderClaim = {
 export const README_PROVIDER_CLAIMS = [
   {
     label: "OpenAI",
-    row: "| OpenAI | API key, `OPENAI_API_KEY`, or built-in account OAuth |",
+    row: "| OpenAI | API key, `OPENAI_API_KEY`, or Sign in with ChatGPT (ChatGPT plan) |",
     evidence: ["src/auth-policy-registry.ts"],
   },
   {

@@ -11,22 +11,55 @@ const EVIDENCE_DIRECTORY = ".omo/evidence/packed-library-consumer-verification";
 const GENERATED_CATALOG = ["generated/catalog-provenance.json", "generated/catalog-snapshot.json"] as const;
 const ROOT_FILES = ["README.md", "LICENSE", "package.json"] as const;
 const SOURCE_FILES = [
-  "account-oauth-browser", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
+  "account-oauth-browser", "account-oauth-chatgpt", "account-oauth-github", "account-oauth-openai", "account-oauth-shared", "account-oauth", "atomic-file",
   "auth-policy-registry", "catalog-adapter", "catalog-cache", "catalog-http", "catalog-normalize", "catalog-refresh", "catalog-runtime",
-  "catalog-snapshot", "catalog-source-schema", "catalog", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-http",
-  "cliproxyapi-release", "cliproxyapi", "credential-removal", "external-auth", "index", "kit-runtime-auth", "kit", "picker",
+  "catalog-snapshot", "catalog-source-schema", "catalog", "chatgpt-plan-credential", "chatgpt-plan-id-token", "chatgpt-plan-loopback",
+  "chatgpt-plan-models", "chatgpt-plan-refresh", "chatgpt-plan-scope", "chatgpt-plan", "cliproxyapi-archive", "cliproxyapi-cache", "cliproxyapi-config",
+  "cliproxyapi-connector", "cliproxyapi-http", "cliproxyapi-management",
+  "cliproxyapi-release", "cliproxyapi", "connect-flow-state", "connect-flows", "connect-ops", "connect-protocol", "connect-runtime", "connect-service", "credential-removal", "external-auth", "hosted-store", "hosted-types", "index", "kit-runtime-auth", "kit", "picker-auth-methods", "picker",
   "safe-dir", "schema", "storage", "types",
 ] as const;
 const DIST_FILES = [...SOURCE_FILES, "catalog-index"] as const;
+const REACT_SOURCE_FILES = [
+  "src/react/ConnectPanel.tsx",
+  "src/react/connect-flow.tsx",
+  "src/react/connect-state.ts",
+  "src/react/entity-views.tsx",
+  "src/react/featured-providers.tsx",
+  "src/react/index.ts",
+  "src/react/provider-catalog.tsx",
+  "src/react/step-views.tsx",
+  "src/react/styles.ts",
+  "src/react/transport.ts",
+  "src/react/use-connect.ts",
+  "src/react/use-step-polling.ts",
+] as const;
+const REACT_DIST_FILES = [
+  "dist/react/ConnectPanel",
+  "dist/react/connect-flow",
+  "dist/react/connect-state",
+  "dist/react/entity-views",
+  "dist/react/featured-providers",
+  "dist/react/index",
+  "dist/react/provider-catalog",
+  "dist/react/step-views",
+  "dist/react/styles",
+  "dist/react/transport",
+  "dist/react/use-connect",
+  "dist/react/use-step-polling",
+] as const;
 const LIFECYCLE_SCRIPTS = ["prepare", "prepack", "postpack", "preinstall", "install", "postinstall"] as const;
 
 const packageSchema = z.object({
   bin: z.never().optional(),
-  exports: z.object({ ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict() }).strict(),
+  exports: z.object({
+    ".": z.object({ bun: z.literal("./src/index.ts"), import: z.literal("./dist/index.js"), types: z.literal("./dist/index.d.ts") }).strict(),
+    "./react": z.object({ bun: z.literal("./src/react/index.ts"), import: z.literal("./dist/react/index.js"), types: z.literal("./dist/react/index.d.ts") }).strict(),
+  }).strict(),
   files: z.array(z.string()),
   publishConfig: z.object({ access: z.literal("public"), registry: z.literal("https://registry.npmjs.org/") }).strict(),
   scripts: z.record(z.string(), z.string()),
-  version: z.literal("1.0.0"),
+  version: z.literal("1.1.0"),
 });
 
 export type PackVerification = {
@@ -52,7 +85,9 @@ function expectedInventory(): readonly string[] {
     ...ROOT_FILES,
     ...GENERATED_CATALOG,
     ...SOURCE_FILES.map((file) => `src/${file}.ts`),
+    ...REACT_SOURCE_FILES,
     ...DIST_FILES.flatMap((file) => [`dist/${file}.d.ts`, `dist/${file}.js`, `dist/${file}.js.map`]),
+    ...REACT_DIST_FILES.flatMap((file) => [`${file}.d.ts`, `${file}.js`, `${file}.js.map`]),
   ].sort();
 }
 
@@ -60,7 +95,9 @@ export function validateManifest(value: unknown): void {
   const manifest = packageSchema.parse(value);
   const expectedFiles = [
     "dist",
-    ...SOURCE_FILES.map((file) => `src/${file}.ts`),
+    ...SOURCE_FILES.map((file) => `src/${file}.ts`).flatMap((file) =>
+      file === "src/picker.ts" ? [file, ...REACT_SOURCE_FILES] : [file],
+    ),
     ...GENERATED_CATALOG,
     ...ROOT_FILES,
   ];
@@ -156,7 +193,7 @@ export async function verifyPack(root: string): Promise<PackVerification> {
   const catalog = await validateGeneratedCatalog(root, true);
   const evidence = join(root, EVIDENCE_DIRECTORY);
   await mkdir(evidence, { recursive: true });
-  const tarball = join(evidence, "abran-labs-ai-auth-kit-1.0.0.tgz");
+  const tarball = join(evidence, "abran-labs-ai-auth-kit-1.1.0.tgz");
   await rm(tarball, { force: true });
   const dryRun = await run(["bun", "pm", "pack", "--dry-run", "--ignore-scripts"], root);
   await run(["bun", "pm", "pack", "--ignore-scripts", "--destination", evidence], root);

@@ -1,4 +1,4 @@
-# Storage and security — 1.0.0
+# Storage and security — 1.1.0
 
 ## Storage locations
 

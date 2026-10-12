@@ -10,8 +10,8 @@ test("Given an archive with an unreviewed payload file, when the curl installer 
   try {
     const release = join(directory, "release");
     const extraction = join(directory, "extraction");
-    const archive = join(release, "ai-auth-kit-skill-1.0.0.tar.gz");
-    await cp(join(root, "release", "agent-skill-v1.0.0"), release, { recursive: true });
+    const archive = join(release, "ai-auth-kit-skill-1.1.0.tar.gz");
+    await cp(join(root, "release", "agent-skill-v1.1.0"), release, { recursive: true });
     await mkdir(extraction);
     await Bun.$`tar -xzf ${archive} -C ${extraction}`;
     await writeFile(join(extraction, "ai-auth-kit", "unreviewed.txt"), "unsafe\n");

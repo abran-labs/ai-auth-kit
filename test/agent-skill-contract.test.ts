@@ -7,10 +7,10 @@ import ts from "typescript";
 
 const root = process.cwd();
 const skillRoot = join(root, "skills", "ai-auth-kit");
-const expectedVersion = "1.0.0";
-const installCommand = "bun add @abran-labs/ai-auth-kit@1.0.0";
+const expectedVersion = "1.1.0";
+const installCommand = "bun add @abran-labs/ai-auth-kit@1.1.0";
 const skillReleaseSchema = z.object({
-  archive: z.literal("ai-auth-kit-skill-1.0.0.tar.gz"),
+  archive: z.literal("ai-auth-kit-skill-1.1.0.tar.gz"),
   installer: z.literal("install-agent-skill.sh"),
   libraryPackage: z.literal("@abran-labs/ai-auth-kit"),
   libraryVersion: z.literal(expectedVersion),
@@ -28,6 +28,14 @@ const packageFixtureSchema = z.object({
           types: z.string(),
         })
         .strict(),
+      "./react": z
+        .object({
+          bun: z.literal("./src/react/index.ts"),
+          import: z.literal("./dist/react/index.js"),
+          types: z.literal("./dist/react/index.d.ts"),
+        })
+        .strict()
+        .optional(),
     })
     .strict(),
 });
@@ -106,15 +114,15 @@ test("Given the versioned skill payload, when it is inspected, then it is comple
   const workflowPosition = skill.indexOf("## Workflow");
   expect(checkerPosition).toBeGreaterThan(-1);
   expect(checkerPosition).toBeLessThan(workflowPosition);
-  expect(skill).toContain("exactly 1.0.0");
+  expect(skill).toContain("exactly 1.1.0");
   expect(skill).toContain("Do not continue");
 });
 
 test("Given the exact library version, when first-use validation runs, then it reports the resolved package and succeeds", async () => {
   const result = await runVersionCheck(expectedVersion);
   expect(result.exitCode, result.stderr).toBe(0);
-  expect(result.stdout).toContain("expected=1.0.0");
-  expect(result.stdout).toContain("detected=1.0.0");
+  expect(result.stdout).toContain("expected=1.1.0");
+  expect(result.stdout).toContain("detected=1.1.0");
   expect(result.stdout).toContain("path=");
   expect(result.stdout).toContain("upgrade=no-action-required");
 });
@@ -129,7 +137,7 @@ test("Given the public root module, when the self-contained API reference is che
   });
   const reference = await Bun.file(join(skillRoot, "references", "api.md")).text();
 
-  expect(exports).toHaveLength(65);
+  expect(exports).toHaveLength(159);
   for (const exportedName of exports) expect(reference).toContain(`\`${exportedName}\``);
 });
 
@@ -153,7 +161,7 @@ test("Given agent implementation guidance, when knowledge sources are ordered, t
 test("Given a mismatched library version, when first-use validation runs, then it stops with exact remediation", async () => {
   const result = await runVersionCheck("0.9.0");
   expect(result.exitCode).not.toBe(0);
-  expect(result.stderr).toContain("expected=1.0.0");
+  expect(result.stderr).toContain("expected=1.1.0");
   expect(result.stderr).toContain("detected=0.9.0");
   expect(result.stderr).toContain("path=");
   expect(result.stderr).toContain(`upgrade=${installCommand}`);

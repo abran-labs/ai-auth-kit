@@ -39,7 +39,7 @@ async function runPreflight(fixture: Readonly<Partial<Record<string, string>>>):
     }
     const sha256 = await Bun.$`node -e 'const { createHash } = require("node:crypto"); const { readFileSync } = require("node:fs"); process.stdout.write(createHash("sha256").update(readFileSync(process.argv[1])).digest("hex"));' ${tarball}`.text();
     const sri = await Bun.$`node -e 'const { createHash } = require("node:crypto"); const { readFileSync } = require("node:fs"); process.stdout.write("sha512-" + createHash("sha512").update(readFileSync(process.argv[1])).digest("base64"));' ${tarball}`.text();
-    await writeFile(npm, `#!/bin/sh\ncase "$*" in\n  "ping --registry=${registry}") if [ "${fixture.ping ?? "pong"}" = "wrong registry" ]; then exit 91; fi; printf '%s\\n' "${fixture.ping ?? "pong"}" ;;\n  whoami) if [ "${fixture.whoami ?? "release-bot"}" = "fail" ]; then printf '%s\\n' "OIDC has no token-backed principal" >&2; exit 92; fi; printf '%s\\n' "${fixture.whoami ?? "release-bot"}" ;;\n  "access ls-packages @abran-labs --json") printf '%s\\n' '${fixture.packages ?? '{"@abran-labs/ai-auth-kit":"write"}'}' ;;\n  "org ls abran-labs --json") printf '%s\\n' '${fixture.organization ?? '{"release-bot":"developer"}'}' ;;\n  "view @abran-labs/ai-auth-kit@1.0.0 version --registry=${registry} --json") printf '%s\\n' '${fixture.version ?? "null"}' ;;\n  "view @abran-labs/ai-auth-kit dist-tags --registry=${registry} --json") printf '%s\\n' '${fixture.tags ?? "{}"}' ;;\n  "publish --dry-run --access public $TARBALL") printf '%s\\n' "dry run accepted" ;;\n  *) printf 'unexpected npm invocation: %s\\n' "$*" >&2; exit 90 ;;\nesac\n`, { mode: 0o755 });
+    await writeFile(npm, `#!/bin/sh\ncase "$*" in\n  "ping --registry=${registry}") if [ "${fixture.ping ?? "pong"}" = "wrong registry" ]; then exit 91; fi; printf '%s\\n' "${fixture.ping ?? "pong"}" ;;\n  whoami) if [ "${fixture.whoami ?? "release-bot"}" = "fail" ]; then printf '%s\\n' "OIDC has no token-backed principal" >&2; exit 92; fi; printf '%s\\n' "${fixture.whoami ?? "release-bot"}" ;;\n  "access ls-packages @abran-labs --json") printf '%s\\n' '${fixture.packages ?? '{"@abran-labs/ai-auth-kit":"write"}'}' ;;\n  "org ls abran-labs --json") printf '%s\\n' '${fixture.organization ?? '{"release-bot":"developer"}'}' ;;\n  "view @abran-labs/ai-auth-kit@1.1.0 version --registry=${registry} --json") printf '%s\\n' '${fixture.version ?? "null"}' ;;\n  "view @abran-labs/ai-auth-kit dist-tags --registry=${registry} --json") printf '%s\\n' '${fixture.tags ?? "{}"}' ;;\n  "publish --dry-run --access public $TARBALL") printf '%s\\n' "dry run accepted" ;;\n  *) printf 'unexpected npm invocation: %s\\n' "$*" >&2; exit 90 ;;\nesac\n`, { mode: 0o755 });
     const tagLookupOutput = fixture.tags ?? "{}";
     const tagLookupExit = fixture.tagLookupExit ?? "0";
     const versionsLookupOutput = fixture.versions ?? "[]";
@@ -161,7 +161,7 @@ test("Given an existing package, when version lookup errors or JSON is malformed
 });
 
 test("Given an existing package, when the target version occurs in its versions array, then preflight rejects publication", async () => {
-  const result = await runPreflight({ versions: '["0.9.0","1.0.0"]' });
+  const result = await runPreflight({ versions: '["0.9.0","1.1.0"]' });
   expect(result.exitCode, result.output).not.toBe(0);
 });
 
@@ -198,15 +198,15 @@ test("Given GitHub OIDC trusted publishing, when provenance is missing, then pre
 test("Given release preflight fixtures, when registry, principal, authority, availability, auth path, and artifact integrity are invalid, then every ambiguous state fails closed", async () => {
   const baseline = await runPreflight({});
   expect(baseline.exitCode, baseline.output).toBe(0);
-  const uploadedArtifact = await runPreflight({ filename: "abran-labs-ai-auth-kit-1.0.0.tgz" });
+  const uploadedArtifact = await runPreflight({ filename: "abran-labs-ai-auth-kit-1.1.0.tgz" });
   expect(uploadedArtifact.exitCode, uploadedArtifact.output).toBe(0);
   for (const locale of ["C", "en_US.UTF-8"] as const) {
-    const localeArtifact = await runPreflight({ filename: "abran-labs-ai-auth-kit-1.0.0.tgz", locale });
+    const localeArtifact = await runPreflight({ filename: "abran-labs-ai-auth-kit-1.1.0.tgz", locale });
     expect(localeArtifact.exitCode, localeArtifact.output).toBe(0);
   }
   const packed = await verifyPack(root);
   for (const locale of ["C", "en_US.UTF-8"] as const) {
-    const actualArtifact = await runPreflight({ filename: "abran-labs-ai-auth-kit-1.0.0.tgz", locale, sourceTarball: packed.tarball });
+    const actualArtifact = await runPreflight({ filename: "abran-labs-ai-auth-kit-1.1.0.tgz", locale, sourceTarball: packed.tarball });
     expect(actualArtifact.exitCode, actualArtifact.output).toBe(0);
   }
 
@@ -215,8 +215,8 @@ test("Given release preflight fixtures, when registry, principal, authority, ava
     { whoami: "", auth: "token" },
     { packages: "{}", auth: "token" },
     { organization: "{}", auth: "token" },
-    { versions: '["1.0.0"]' },
-    { tags: '{"latest":"1.0.0"}' },
+    { versions: '["1.1.0"]' },
+    { tags: '{"latest":"1.1.0"}' },
     { sha256: "0".repeat(64) },
     { sri: "sha512-invalid" },
     { inventory: "drift" },
