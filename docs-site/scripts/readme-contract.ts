@@ -12,7 +12,6 @@ const requiredReadmeOrder = [
   EXACT_README_PROMISE,
   "## Install",
   "## Install the skill",
-  "## Docs",
 ] as const
 
 const forbiddenReadmePhrases = [

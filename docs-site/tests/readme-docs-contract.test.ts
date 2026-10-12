@@ -20,9 +20,7 @@ ${EXACT_README_PROMISE}
 ${exactLibraryInstall}
 ${exactNpmInstall}
 ## Install the skill
-${exactSkillInstall}
-## Docs
-[Documentation](docs-site/src/content/docs/start/index.md)`
+${exactSkillInstall}`
 const validAppearance = `### Appearance menu
 - System maps to internal \`auto\`, persists the empty string \`""\` under \`starlight-theme\`, and resolves \`data-theme\`.
 - Light persists exactly \`light\`; Dark persists exactly \`dark\`. Missing or invalid values normalize to System.
@@ -72,8 +70,8 @@ describe("README and Appearance contract", () => {
   test("rejects activation-flow drift", () => {
     const source = validReadme
       .replace("## Install the skill", "## Pending")
-      .replace("## Docs", "## Install the skill")
-      .replace("## Pending", "## Docs")
+      .replace("## Install\n", "## Install the skill\n")
+      .replace("## Pending", "## Install")
     expect(documentationViolations(source, "README.md")).toContain(
       "README.md: content is out of required order",
     )
